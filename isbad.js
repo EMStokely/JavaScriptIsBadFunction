@@ -1,5 +1,12 @@
-﻿
-// ------------------------------------------------------------
+﻿/*
+JavaScript IsBad Function
+------------------------------------------------------------
+Author: Mitchell Stokely
+Version: 1.0, 2022
+License: GNU GENERAL PUBLIC LICENSE VERSION 3
+ Summary: JavaScript IsBad Function is a method to detect bad values.
+------------------------------------------------------------
+*/
 
 // UNIVERSAL ERROR CHECKER : "IsBad()" and "IfBad()" w/ default value
 // There was too many ways bad coercion, calculations, casts, and corrupt data in JavaScript create problems. This script below was designed to check for presence of valid values and return a true-false response.
@@ -8,8 +15,8 @@
 // Detect empty, missing, or bad values and returns a default value when used with extra function below. Detects as Empty or "Bad" the following:
 
 // 1. empty strings: "" '' ``
-// 2. tabs/carriagereturns/newlines: \t\n\r
-// 3. NaN, including from calculations, assigned, or returned result values
+// 2. empty strings with tabs/carriagereturns/newlines: \t\n\r
+// 3. NaN, including those originating from calculations, assigned, or returned from result values
 // 4. undeclared or uninitialized variables (see undefined)
 // 5. undefined primitive values and unassigned variables which return the undefined property
 // 6. null
