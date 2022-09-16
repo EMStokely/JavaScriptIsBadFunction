@@ -45,9 +45,9 @@ Cross-browser Issues: Keep in mind this script is not designed to work in many o
 
 The "IsBad()" function is in a SINGLE JAVASCRIPT FILE so very easy to copy-and-paste into your web project with zero hassles. Then link to it in your web page. It also includes rich comments to help you customize or understand the logic. Feel free to minimize and compress the file.
 
-In addition, I have added a very comprehgensive "IsBadTester()" function with a giant array of bad data values you can run in the browser console developer tools to check what exactly the IsBad() function returns for various types of numeric and non-numeric data. Just run the same tester in JavaScript and it will list in the console window of the browser's developer tools a large kist of "bad" and "good" data you can review. Feel free to add to my list and run your own tests!
+In addition, I have added a very comprehensive "IsBadTester()" function with a giant array of typical BAD JAVASCRIPT DATA VALUES you can run and then review as results in the browser console developer tools. This allows you to check what exactly the IsBad() function returns for various types of numeric and non-numeric data. Just run the "IsBadTester()" function and it will list in the console window of the browser's developer tools a large list of "bad" and "good" data test results returned from the "IsBad()" function you can review. Feel free to add to my my bad data list and run your own bad data tests!
 
-Inside the Please keep in mind this is Version 1.0 of this function, and it will likely have many add-ons, including a complete string-to-numeric parser, better bad boolean detection so you avoid false values, and other goodies. But for now, it is ok as is.
+Please keep in mind this is version 1.0 of this function, and it will likely have many new goodies and improvements going forward.
 
 - Mitchell Stokely, 2022
 ---
