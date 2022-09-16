@@ -39,6 +39,8 @@ Because "badness" in 2022 especially is a semi-objective idea with many fors of 
 
 Once you get a "true" response to "IsBad()", you can then tell your script to do something to avoid the error. I have also added an additional function called "IfBad()" that allows you to return a default value from the function if the data value is bad. This is extremely helpful in allowing you to use a default that works with your math equation or logic, should the value come back corrupted or not what you expect. This is especially critical in mathematical calculations.
 
+Cross-browser Issues: Keep in mind this script is not designed to work in many older browsers (pre-2015) like Internet Explorer or any browser that does not support ES2020 which includes support for the BigInt type. It has not been tested in older browsers, either. So until that is done, use this script with caution! However it will work in the majority of modern scripting engines, like Chrome's' V8 engine.
+
 The "IsBad()" function is in a SINGLE JAVASCRIPT FILE so very easy to copy-and-paste into your web project then link to in your web page. It also includes rich comments to help you customize or understand the logic. Feel free to minimize and compress the file.
 
 In addition, I have added a very comprehgensive "IsBadTester()" function with a giant array of bad data values you can run in the browser console developer tools to check what exactly the IsBad() function returns for various types of numeric and non-numeric data. Just run the same tester in JavaScript and it will list in the console window of the browser's developer tools a large kist of "bad" and "good" data you can review. Feel free to add to my list and run your own tests!
