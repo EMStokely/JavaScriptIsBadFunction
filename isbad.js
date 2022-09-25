@@ -16,7 +16,7 @@ License: GNU GENERAL PUBLIC LICENSE VERSION 3
 
 // 1. empty strings: "" '' ``
 // 2. empty strings with tabs/carriagereturns/newlines: \t\n\r
-// 3. NaN, including those originating from calculations, assigned, or returned from result values
+// 3. NaN, including those originating from isNaN, Number.isNaN, calculations, assigned, or returned from result values. Note: 0 and -1 are not included.
 // 4. undeclared or uninitialized variables (see undefined)
 // 5. undefined primitive values and unassigned variables which return the undefined property
 // 6. null
@@ -85,10 +85,89 @@ function IsBad(x) {
         // NaN is not representable in JSON, and gets converted to 'null'. So good to avoid with this check here and force the developer to explicitly assign "null", 0, "", or some value instead of an unexpecxted NaN turned to null.
         // "x !== x" is a good NaN check for older/newer browser script engines, as only true for NaN since it can never equal itself. This check in a conditional will always flag a NaN value.
         // Note that Number.isNan works better for all numerical checks, including Integer and BigInt where isNan will blow up on BigInts! x != x is a good fallback as only NaN never equals itself.Only use isNaN for bad date checks in the logic only far below.
-        if ((Number && Number.isNaN(x)) || (x !== x)) {
+
+        // These ways return NaN:
+        //alert(4 + 'hello');// '4hello' - again concat "+" string rules prevent errors
+        //alert(4 - 'hello');// NaN
+        //alert("foo" / 3);// NaN
+        //alert(parseInt("blabla"));// NaN
+        //alert(parseFloat("blabla"));// NaN
+        //alert(Number(undefined));// NaN
+        //alert(Number(NaN));// NaN
+        //alert(0/0);// NaN
+        //alert(Math.sqrt(-1));// NaN
+        //alert(0 * Infinity);// NaN
+        //alert(7 ** NaN);// NaN
+        //alert(7 ** undefined);// NaN
+
+        // NaN : Other Not A Number examples to be careful of:
+
+        // (x !== x)        // ONLY true if x the variable is NaN
+        //isNaN(NaN);       // true
+        //isNaN(undefined); // true - shows that "NaN" explicitly was not returned but still value NaN
+        //isNaN({});        // true
+
+        //isNaN(true);      // false - confusing but because "true" can be coerced into "1"
+        //isNaN(null);      // false - confusing because rules for "null" shift. In most cases become "0"
+        //isNaN(37);        // false
+        //// strings
+        //isNaN('37');      // false: "37" is converted to the number 37 which is not NaN
+        //isNaN('37.37');   // false: "37.37" is converted to the number 37.37 which is not NaN
+        //isNaN("37,5");    // true
+        //isNaN('123ABC');  // true:  parseInt("123ABC") is 123 but Number("123ABC") is NaN
+        //isNaN('');        // false: the empty string is converted to "0" which is not NaN
+        //isNaN(' ');       // false: a string with spaces is converted to "0" which is not NaN
+        //// dates
+        //isNaN(new Date());                // false
+        //isNaN(new Date().toString());     // true -  dangerous as this numeric value is a large time conversion in but could be misisng, bad time, out of range time, wrong time, etc.
+
+        // NaN will always be unequal to itself in comparisons but not using Number.isNaN or isNaN:
+        //NaN === NaN;        // false
+        //Number.NaN === NaN; // false
+        //isNaN(NaN);         // true
+        //isNaN(Number.NaN);  // true
+        //Number.isNaN(NaN);  // true
+
+        //function valueIsNaN(v) { return v !== v; }
+        //valueIsNaN(1);          // false
+        //valueIsNaN(NaN);        // true
+        //valueIsNaN(Number.NaN); // true
+
+        // isNan vs Number.isNaN
+        // isNaN will always coerce first then check that value if NaN
+        // Number.isNan will never coerce and just see if the value is a number
+        // However, do note the difference between isNaN() and Number.isNaN(): the former will return true if the value is currently NaN, or if it is going to be NaN after it is coerced to a number, while the latter will return true only if the value is currently NaN.
+        // isNaN('hello world');        // true?
+        // Number.isNaN('hello world'); // false?
+
+        // Avoid BigInt accept with Number.isNaN as lain isNaN will try and conversion to Number and fail:
+        // isNaN(1n);// TypeError: Conversion from 'BigInt' to 'number' is not allowed.
+        // Number.isNaN(1n);// false
+
+
+        // This is a false positive and the reason why isNaN is not entirely reliable
+        //isNaN('blabla');   // true - confusing as "blabla" is converted to a series of encoded numbers
+        // Parsing this as a number would fail and return NaN!
+
+        // YOU CANNOT FULLY TRUST Number.isNaN, as shown above so better to write your own function that tests all types of characters for any non-numbers, does NOT try to coerce values to numbers like JavaScript does, and allows you to return a "default" value when it fails: Globals.IsNumber(x,0);<<< defaults to 0
+
+        // You can always return NaN though it is not recommended
+        //function sanitise(x) {
+        //  if (isNaN(x)) {
+        //    return NaN;
+        //  }
+        //  return x;
+        //}
+
+        // Note: We avoid using "isNaN" vs "Number.IsNaN" as the former would coerce all values to Number types and valid values like strings or objects would fail conversion. The check below ONLY looks for the value of NaN (window.NaN) explicitly set to the variable!
+        if ((x !== x) || (Number.isNaN(x))) {
             isBadMessage = 'IsBad() : true : NaN';
             return true;
         }
+
+
+
+
 
         // Infinity Check : Force empty response.
         if (x === Infinity
@@ -218,7 +297,7 @@ function IsBad(x) {
 
             // NaN MATH CALCULATION TEST : Will this number value generate a NaN or error when doing basic math? If so, that could be a clue that this is NOT a safe number to use! Number Found but test a few scenarios to make sure it generates no errors.
             // NaN could get created in certain calculations below. So we run a math test that might return a NaN using various values below.
-            if (Number.isNaN && Number.isNaN(x * 1)) {
+            if (Number.isNaN(x * 1)) {
                 // Adding something to an 'undefined' value would result in NaN
                 isBadMessage = 'IsBad() : true : number calc returns NaN : ' + x.valueOf();
                 return true;
@@ -293,7 +372,7 @@ function IsBad(x) {
             }
 
 
-            // Check if an Integer, then run caclulation. If returns NaN the flag is bad.
+            // Check if an Integer, then run calculation. If returns NaN the flag is bad.
             if (Number.isNaN && Number.isNaN(Number.parseInt(x))) {
                 isBadMessage = 'IsBad() : true : number integer conversion returns NaN : ' + x.valueOf();
                 return true;
@@ -649,6 +728,8 @@ var IsBadTester = {
         { test: 0b111111111111111111111111111111111111111111111111111111, name: "0b111111111111111111111111111111111111111111111111111111" },
         { test: '-1.6', name: "'-1.6'" },
         { test: '4.536', name: "'4.536'" },
+        { test: '4,536', name: "'4,536'" },
+        { test: '123abc', name: "'123abc'" },
         { test: -2.6, name: "-2.6" },
         { test: -0.0, name: "-0.0" },
         { test: 0.0, name: "0.0" },
@@ -658,6 +739,7 @@ var IsBadTester = {
         { test: 4500000000000000.5, name: "4500000000000000.5" },
         { test: 999999999999999999999999999999999999999999999999999999999999999999999.0000000000000000000000000000, name: "999999999999999999999999999999999999999999999999999999999999999999999.0000000000000000000000000000" },
         { test: 000001, name: "000001" },
+        { test: 0o000001, name: "0o000001" },
         { test: 8e5, name: "8e5" },
         { test: 234e+7, name: "234e+7" },
         { test: -123e12, name: "-123e12" },
@@ -693,6 +775,10 @@ var IsBadTester = {
         { test: null, name: "null" },
         { test: undefined, name: "undefined" },
         { test: NaN, name: "NaN" },
+        { test: 0/0, name: "0/0" },
+        { test: 0.1/0, name: "0.1/0" },
+        { test: -1/0, name: "-1/0" },
+        { test: "foo"/3, name: "'foo'/3" },
         { test: Number(), name: "Number()" },
         { test: Number(22), name: "Number(22)" },
         { test: Number(123.123), name: "Number(123.123)" },
@@ -730,6 +816,7 @@ var IsBadTester = {
         //{test:BigInt(Infinity),name:"BigInt(Infinity)"},// not allowed
         { test: Number.EPSILON, name: "Number.EPSILON" },
         { test: {}, name: "{}" },
+        { test: ({}), name: "({})" },
         { test: { x: 3 }, name: "{x:3}" },
         { test: { undefined }, name: "{undefined}" },
         //{test:{null},name:"{null}"},// not allowed
