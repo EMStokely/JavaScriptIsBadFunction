@@ -100,7 +100,8 @@ function IsBad(x) {
         //alert(7 ** NaN);// NaN
         //alert(7 ** undefined);// NaN
 
-        // NaN : Other Not A Number examples to be careful of:
+
+        // NaN : Other Not A Number examples to be careful of using "isNan" which coerces values (not Number.isNaN)
 
         // (x !== x)        // ONLY true if x the variable is NaN
         //isNaN(NaN);       // true
@@ -110,14 +111,21 @@ function IsBad(x) {
         //isNaN(true);      // false - confusing but because "true" can be coerced into "1"
         //isNaN(null);      // false - confusing because rules for "null" shift. In most cases become "0"
         //isNaN(37);        // false
-        //// strings
+        //isNaN(0/Infinity));// false as returns 0
+
+        // STRINGS
         //isNaN('37');      // false: "37" is converted to the number 37 which is not NaN
         //isNaN('37.37');   // false: "37.37" is converted to the number 37.37 which is not NaN
-        //isNaN("37,5");    // true
-        //isNaN('123ABC');  // true:  parseInt("123ABC") is 123 but Number("123ABC") is NaN
+
+        // DIFFERENCE BETWEEN isNaN and Number.isNaN
+        //isNaN("37,5");    // true - this value is coerced to a number and fails!
+        //alert(Number.isNaN("37,5")); // false - this value is NOT coerced and accepted as string
+
+        //isNaN('123ABC');  // true:  parseInt("123ABC") is 123 but coerced Number("123ABC") is NaN
         //isNaN('');        // false: the empty string is converted to "0" which is not NaN
         //isNaN(' ');       // false: a string with spaces is converted to "0" which is not NaN
-        //// dates
+
+        // DATES
         //isNaN(new Date());                // false
         //isNaN(new Date().toString());     // true -  dangerous as this numeric value is a large time conversion in but could be misisng, bad time, out of range time, wrong time, etc.
 
@@ -133,21 +141,19 @@ function IsBad(x) {
         //valueIsNaN(NaN);        // true
         //valueIsNaN(Number.NaN); // true
 
-        // isNan vs Number.isNaN
+        // isNaN vs Number.isNaN
         // isNaN will always coerce first then check that value if NaN
         // Number.isNan will never coerce and just see if the value is a number
         // However, do note the difference between isNaN() and Number.isNaN(): the former will return true if the value is currently NaN, or if it is going to be NaN after it is coerced to a number, while the latter will return true only if the value is currently NaN.
-        // isNaN('hello world');        // true?
-        // Number.isNaN('hello world'); // false?
+        // isNaN('hello world');        // true
+        // Number.isNaN('hello world'); // false
 
-        // Avoid BigInt accept with Number.isNaN as lain isNaN will try and conversion to Number and fail:
-        // isNaN(1n);// TypeError: Conversion from 'BigInt' to 'number' is not allowed.
-        // Number.isNaN(1n);// false
-
+        // Avoid BigInt accept with Number.isNaN as plain isNaN will try and coerce to Number and fail:
+        // isNaN(1n);        // TypeError: Conversion from 'BigInt' to 'number' is not allowed.
+        // Number.isNaN(1n); // false
 
         // This is a false positive and the reason why isNaN is not entirely reliable
-        //isNaN('blabla');   // true - confusing as "blabla" is converted to a series of encoded numbers
-        // Parsing this as a number would fail and return NaN!
+        // isNaN('blabla');// true - confusing as "blabla" is converted to a series of encoded numbers
 
         // YOU CANNOT FULLY TRUST Number.isNaN, as shown above so better to write your own function that tests all types of characters for any non-numbers, does NOT try to coerce values to numbers like JavaScript does, and allows you to return a "default" value when it fails: Globals.IsNumber(x,0);<<< defaults to 0
 
@@ -159,6 +165,13 @@ function IsBad(x) {
         //  return x;
         //}
 
+        // RECOMMENDED isNumeric() Check like in jQuery:
+        //function isNumeric(n) {
+        //    return !isNaN(parseFloat(n)) && isFinite(n);
+        //}
+
+
+        // This logic below checks for the raw "window.NaN" explicit value assigned to the variable without number coercion!
         // Note: We avoid using "isNaN" vs "Number.IsNaN" as the former would coerce all values to Number types and valid values like strings or objects would fail conversion. The check below ONLY looks for the value of NaN (window.NaN) explicitly set to the variable!
         if ((x !== x) || (Number.isNaN(x))) {
             isBadMessage = 'IsBad() : true : NaN';
@@ -297,9 +310,19 @@ function IsBad(x) {
 
             // NaN MATH CALCULATION TEST : Will this number value generate a NaN or error when doing basic math? If so, that could be a clue that this is NOT a safe number to use! Number Found but test a few scenarios to make sure it generates no errors.
             // NaN could get created in certain calculations below. So we run a math test that might return a NaN using various values below.
-            if (Number.isNaN(x * 1)) {
+            // isNan coerces value to a number to calculate NaN versus Number.isNaN which just checks if its already assigned to the variable. But if so, it runs a quick math cacl to see if that returms NaN.
+            if (Number.isNaN(x * 1) || isNaN(x)) {
                 // Adding something to an 'undefined' value would result in NaN
                 isBadMessage = 'IsBad() : true : number calc returns NaN : ' + x.valueOf();
+                return true;
+            }
+
+            // ISNUMERIC type Checker
+            // Use this to filter out any last minute non-numeric values, which should be rare based on the "typeof" Number check above!
+            // Note that parseInt() is not a good way to check numeric values
+            // isNan as opposed to Numer.isNaN will coerce or try all values. If it fails then false is returned.
+            if (isNaN(parseFloat(x))) {
+                isBadMessage = 'IsBad() : true : isNaN(parseFloat(x)) : ' + x.valueOf();
                 return true;
             }
 
@@ -373,7 +396,7 @@ function IsBad(x) {
 
 
             // Check if an Integer, then run calculation. If returns NaN the flag is bad.
-            if (Number.isNaN && Number.isNaN(Number.parseInt(x))) {
+            if (Number.isNaN(parseInt(x))) {
                 isBadMessage = 'IsBad() : true : number integer conversion returns NaN : ' + x.valueOf();
                 return true;
             }
@@ -397,6 +420,17 @@ function IsBad(x) {
             for (const property1 in x) {
                 isBadMessage = 'IsBad() : false : number with properties : ' + x.valueOf();
                 return false;
+            }
+
+            if (Number.isNaN(Number(x) * 1) || isNaN(Number(x))) {
+                // Adding something to an 'undefined' value would result in NaN
+                isBadMessage = 'IsBad() : true : number calc returns NaN : ' + x.valueOf();
+                return true;
+            }
+
+            if (isNaN(parseFloat(Number(x)))) {
+                isBadMessage = 'IsBad() : true : isNaN(parseFloat(x)) : ' + x.valueOf();
+                return true;
             }
 
             // Type Cast Number Object to a value. We try and case the Number Object back to a Number primitive first.
@@ -777,7 +811,10 @@ var IsBadTester = {
         { test: NaN, name: "NaN" },
         { test: 0/0, name: "0/0" },
         { test: 0.1/0, name: "0.1/0" },
-        { test: -1/0, name: "-1/0" },
+        { test: -1 / 0, name: "-1/0" },
+        { test: 0 / Infinity, name: "0/Infinity" },
+        { test: 1 / Infinity, name: "1/Infinity" },
+        { test: Infinity / 0, name: "Infinity / 0" },
         { test: "foo"/3, name: "'foo'/3" },
         { test: Number(), name: "Number()" },
         { test: Number(22), name: "Number(22)" },
