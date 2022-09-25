@@ -306,13 +306,21 @@ function IsBad(x) {
         //num.toString(10); // Outputs: "255" <<< use this to see if you can convert the value to decimal number
         //num.toString(2); // Outputs: "11111111"
 
+        // ISNAN() FUNCTIONS (how used below)
+        // isNaN('hello world');// true - CONVERTS VALUE TO NUMBER AND IF "NaN" IS RETURNED
+        // Number.isNaN('hello world');// false - CHECKS ONLY FOR "NaN" VALUE NOT IF VALUE IS NUMERIC!
+
         if (typeof x === 'number') {
 
             // NaN MATH CALCULATION TEST : Will this number value generate a NaN or error when doing basic math? If so, that could be a clue that this is NOT a safe number to use! Number Found but test a few scenarios to make sure it generates no errors.
             // NaN could get created in certain calculations below. So we run a math test that might return a NaN using various values below.
-            // isNan coerces value to a number to calculate NaN versus Number.isNaN which just checks if its already assigned to the variable. But if so, it runs a quick math cacl to see if that returms NaN.
+            // "isNan" coerces value to a number to calculate NaN. It runs a quick math calc. to see if that returns NaN.
+            // "Number.isNaN" just checks if its already assigned to the variable NaN.
+
+            // ALERT: Do NOT do an equality test below (x !== x) for comparing equality of any floating point values with decimals that are coereced or calculated as they are notoriously inaccurate and would likely fail this equality check. If NaN is checked here, test below here would always fail for them!
+
+            // Logic below should RARELY catch anything since typeof 'number' here would stop ann primitive literals other than numbers. That is different for its use below for new Number() object constructor values.
             if (Number.isNaN(x * 1) || isNaN(x)) {
-                // Adding something to an 'undefined' value would result in NaN
                 isBadMessage = 'IsBad() : true : number calc returns NaN : ' + x.valueOf();
                 return true;
             }
@@ -396,11 +404,12 @@ function IsBad(x) {
 
 
             // Check if an Integer, then run calculation. If returns NaN the flag is bad.
-            if (Number.isNaN(parseInt(x))) {
+            if (isNaN(parseInt(x))) {
                 isBadMessage = 'IsBad() : true : number integer conversion returns NaN : ' + x.valueOf();
                 return true;
             }
 
+            // Check if an Integer in range
             // Min and Max Safe Integer selects the positive and negative max ranges for integers only. These translate to +9007199254740991 to -9007199254740991.
 
             if (Number && x >= Number.MIN_SAFE_INTEGER && x <= Number.MAX_SAFE_INTEGER) {
@@ -413,6 +422,8 @@ function IsBad(x) {
         }
 
 
+
+
         // Number Object Constructor Check
         if (Number && (x instanceof Number || (Object.prototype.toString.call(x) === '[object Number]'))) {
 
@@ -422,9 +433,13 @@ function IsBad(x) {
                 return false;
             }
 
+            // EXPLICIT NUMBER TYPE CAST TEST
+            // Try a Number Coercion to remove Number Objects, etc. Is integer when coerced the same value or object? If it does NOT equal its self as a value, that implies the Number Object is NaN. Flag as false.
+
+            // ALERT: Do NOT do an equality test below (x !== x) for comparing equality of any floating point values with decimals that are coereced or calculated as they are notoriously inaccurate and would likely fail this equality check. If NaN is checked here, test below here would always fail for them!
+
             if (Number.isNaN(Number(x) * 1) || isNaN(Number(x))) {
-                // Adding something to an 'undefined' value would result in NaN
-                isBadMessage = 'IsBad() : true : number calc returns NaN : ' + x.valueOf();
+                isBadMessage = 'IsBad() : true : Number.isNaN(Number(x) * 1) : ' + x.valueOf();
                 return true;
             }
 
@@ -482,26 +497,23 @@ function IsBad(x) {
                 }
             }
 
-            // EXPLICIT NUMBER TYPE CAST TEST
-            // Try a Number Coercion to remove Number Objects, etc. Is integer when coerced the same value or object? Use for Integer and BigInt Number types only! If it does NOT equal its self as a value, that implies the Number Object has additional value and not a bad value as its a complex numeric object. Flag as false.
 
-            // ALERT: Do NOT use equality test below for comparing equality of any floating point values with decimals that are coereced or calculated as they are notoriously inaccurate and would likely fail this equality check. If NaN is checked here, test below here would always fail for them!
-  
-            if (Number(x) != x) {
-                // "==" type coercion would occur here. If parsing fails here likely would result in NaN which is never equal to anything. Coercion of the type would work in most cases except for NaN. This fails on floats so avoid unless after float check logic.
+            // EXTRA NUMBER OBJECT NaN CHECKER - when the Number object value is extracted, does it not equal itself when coerced, and therefore is NaN?
+            if (Number(x) != Number(x)) {
+                // "==" type coercion would occur here. If parsing fails here likely would result in NaN which is never equal to anything. This fails on floats so avoid unless after float check logic. The Number Object might have other properties or values that trigger this, but unlikely. More of a fall back test.
                 isBadMessage = 'IsBad() : true : number coercion failed : ' + Number(x);
                 return true;
             }
 
-            //if (Number(x) !== x) {
-                // "===" no type coercion would occur here but if both values are wrapped Number objects, though equal, would fail here. This will reject Number Objects, so do not test!
-                //isNumMessage = 'IsNum : false : Number() : wrapped number object';
-                //return false;
-            //}
+            // Check if an Integer, then run calculation. If returns NaN the flag is bad.
+            if (isNaN(parseInt(Number(x)))) {
+                isBadMessage = 'IsBad() : true : number integer conversion returns NaN : ' + x.valueOf();
+                return true;
+            }
 
-            // The logic below is the same in the Number Primitive check. If the caste value is a number that implies the Number Object was created to only hold a primitive. We now just check to see if that number is in range as a working integer only that c an be used reliably in calculations. Anything out of range is dangerous and risky so bad.
+            // The logic below is the same in the Number Primitive check. If the caste value is a number that implies the Number Object was created to only hold a primitive. We now just check to see if that number is in range as a working integer only that can be used reliably in calculations. Anything out of range is dangerous and risky so bad.
 
-            // Check if an Integer
+            // Check if an Integer in range
             // Min and Max Safe Integer selects the positive and negative max ranges for integers only. These translate to +9007199254740991 to -9007199254740991.
 
             if (Number(x) >= Number.MIN_SAFE_INTEGER && Number(x) <= Number.MAX_SAFE_INTEGER) {
@@ -512,7 +524,6 @@ function IsBad(x) {
                 isBadMessage = 'IsBad() : true : integer out of range : ' + Number(x).valueOf();
                 return true;
             }
-
         }
 
 
@@ -520,8 +531,14 @@ function IsBad(x) {
         // Note that BigInt has no object constructor nor can be a decimal. So we use the primitive check only. ES2020 introduced BigInt so not widely supported yet. Number Primitive and Number Object Constructor Check. Note: Any use of "BigInt()" conversion without checking if value is within +-Number.MAX_VALUE will blow up and say failed due to number be Infinity and not an integer! So ALWAYS use "IsBad()" to make sure number is in range before doing "BigInt(x)"!
         if (typeof x === 'bigint') {
 
+            // BIGINT WILL NEVER RETURN "NaN"
+            // AVOID NaN checkes with BigInt, as BigInt is NOT a Number type!
+            // isNaN(1n);// "TypeError: Conversion from 'BigInt' to 'number' is not allowed."
+            // Number.isNaN(1n);// false
+
             // TOO BIG FOR BIGINT NUMBERS
-            // We know that BigInt numbers are not accurate but also that JavaScrpt has a number ceiling when they could flip to Infinity or fail. So below we flag large values approaching the max ceiling as bad numbers. For now we do not accept max storable bigints beyond safe max storage ranges, as they would fail and become infinity. To allow full JavaScript storage ranges for bigint checks, use Number.MAX_VALUE and Number.MIN_VALUE below. Note: BigInts cannot be decimal values so whole numbers are the floor. The BigInt empty function "BigInt()" without a number defaults to 0 like "Number()" so is valid.
+            // BigInts are a NEW type from ES2020
+            // We know that BigInt numbers are not accurate but also that JavaScrpt has a number ceiling when they could flip to Infinity or fail. So below we flag large values approaching the max ceiling as bad numbers. For now we do not accept max storable bigints beyond safe max storage ranges, as they would fail and become infinity. To allow full JavaScript storage ranges for bigint checks, use Number.MAX_VALUE and Number.MIN_VALUE below. Note: BigInts cannot be decimal values so whole numbers are the floor. The BigInt empty function "BigInt()" without a number defaults to 0 like "Number()" so is valid. You cannot instantiate BigInt as a Constructor Function like new BigInt().
             if (BigInt(x) >= BigInt(-(Number.MAX_VALUE)) && BigInt(x) <= BigInt(Number.MAX_VALUE)) {
                 isBadMessage = 'IsBad() : false : bigint : ' + x.valueOf();
                 return false;
