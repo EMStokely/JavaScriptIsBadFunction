@@ -327,8 +327,7 @@ function IsBad(x) {
 
             // ISNUMERIC type Checker
             // Use this to filter out any last minute non-numeric values, which should be rare based on the "typeof" Number check above!
-            // Note that parseInt() is not a good way to check numeric values
-            // isNan as opposed to Numer.isNaN will coerce or try all values. If it fails then false is returned.
+            // Note that parseInt() is not a good way to check numeric values as parseFloat which catch some bugs.
             if (isNaN(parseFloat(x))) {
                 isBadMessage = 'IsBad() : true : isNaN(parseFloat(x)) : ' + x.valueOf();
                 return true;
