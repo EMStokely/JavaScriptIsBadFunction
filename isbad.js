@@ -58,26 +58,30 @@ function IsBad(x) {
 
     try {
 
-        // Undefined Check. This catches two types.
+        // Undefined Check
+        // This catches two undefined scenarios, if a variable has been defined/declared or declared but not initialized or assigned a value:
+        // 1. The first check catches a variable that does NOT exist (undefined/undeclared) that has a type of 'undefined', or a declared variable that is not initialized/assigned to a value yet (assigned to the undefined primitive).
+        // 2. The second check catches the latter part of the logic above, a declared variable that is not initialized/assigned to a value yet (assigned to the undefined primitive).
         if (typeof x === 'undefined' || x === undefined) {
             isBadMessage = 'IsBad() : true : undefined';
             return true;
         }
 
         // Null Check
+        // Note: This does not coerce a null from a variable like '==' would do, just checks for the explicit value.
         if (x === null) {
             isBadMessage = 'IsBad() : true : null';
             return true;
         }
 
-        // Stop All Symbol Checks! Always false! Symbols can not be empty and dont have constructors so cannot be created using "new Symbol()".
+        // ALERT: Catch All Symbol Checks here as they are always unique and never bad data! Symbols can not be empty and dont have constructors so cannot be created using "new Symbol()".
         if (typeof x === 'symbol') {
             isBadMessage = 'IsBad() : false : symbol';
             return false;
         }
 
         // SPECIAL CASE : NaN in JavaScript
-        // 'NaN' is a member of the 'Number' type but is not a legal number. Bad calculations or conversions return NaN. Beware that Numbers can also be assigned or return null, return undefined as a property like when a variable doesnt exist, or be assigned directly the undefined primitive. Examples are 0/0 returns NaN but 1/0 returns Infinity, -1/0 -Infinity.
+        // 'NaN' is a member of the 'Number' type but is not a legal number. Bad calculations or conversions return NaN. Beware that Numbers can also be assigned or return null, return undefined as a property like when a variable doesnt exist, or be assigned directly the undefined primitive. Examples are 0/0 returns NaN, but 1/0 returns Infinity, -1/0 -Infinity.
         //  ALWAYS CHECK FOR NaN! Why? (see below)
         // In most programs, NaN either cannot be translated correctly from javaScript into many types, is read as an error, or creates a new error in 3rd party applications when read! It also is created when math functions fail like 0/0.
         // Do NOT use legacy "isNaN" as in (isNaN && isNaN(x)), use Number.IsNull(x) instead, as "isNaN" tries to convert/coerce the value and some values would fail or have surprising behavior! Using Number.isNaN() allows a check of the actual value without conversion.
@@ -85,6 +89,7 @@ function IsBad(x) {
         // NaN is not representable in JSON, and gets converted to 'null'. So good to avoid with this check here and force the developer to explicitly assign "null", 0, "", or some value instead of an unexpecxted NaN turned to null.
         // "x !== x" is a good NaN check for older/newer browser script engines, as only true for NaN since it can never equal itself. This check in a conditional will always flag a NaN value.
         // Note that Number.isNan works better for all numerical checks, including Integer and BigInt where isNan will blow up on BigInts! x != x is a good fallback as only NaN never equals itself.Only use isNaN for bad date checks in the logic only far below.
+        // Note that some calculations using valid numbers can create NaN like Math.sqrt(-1). We do not test those as we cannot assume what the caller intends.
 
         // These ways return NaN:
         //alert(4 + 'hello');// '4hello' - again concat "+" string rules prevent errors
