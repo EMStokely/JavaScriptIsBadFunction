@@ -43,6 +43,7 @@ License: GNU GENERAL PUBLIC LICENSE VERSION 3
 
 // "IfBad()" is an overload for "IsBad()" and returns a default "d" value of the developers choice if a bad or empty value is detected.
 function IfBad(x, d) {
+    'use strict';
     if (IsBad(x)) return d;
 }
 
@@ -53,6 +54,8 @@ function IfBad(x, d) {
 
 var isBadMessage = '';
 function IsBad(x) {
+
+    'use strict';
 
     isBadMessage = 'IsBad() : no message';
 
@@ -711,14 +714,14 @@ function IsBad(x) {
 
 var IsBadTester = {
     start: function () {
-
+        'use strict';
         // Print result in Developer Tools (F12) console section in the web browser.
         console.log('IsBadTester() : Start');
         var a = this.Test(this.testdata);
         return null;
-
     },
     Test: function (data) {
+        'use strict';
         for (var i = 0; i < data.length; i++) {
             try {
 
