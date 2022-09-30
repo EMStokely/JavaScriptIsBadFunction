@@ -391,7 +391,7 @@ function IsBad(x) {
                 if (tempFloat) {
                     // Float Test...
                     if (tempFloat != 0) {
-                        // Settings below support 100% accuracy floats to 9 digits. Change this range as needed! Use MIN and MAX values if you want unlimited float number ranges but with decreesing accuracy in decimals as your number gets larger and smaller.
+                        // Settings below support 100% accuracy floats to 9 digits. Change this range as needed! Use MIN and MAX values if you want unlimited float number ranges but with decreesing accuracy in decimals as your number gets larger and smaller. "8388608" is the max integer range to allow guaranteed 9-decimal accurate float values!
                         //if (x >= Number.MIN_VALUE && x <= Number.MAX_VALUE) {
                         if (Number && x >= 1e-10 && x <= 8388608) {
                             isBadMessage = 'IsBad() : false : positive float : ' + x.valueOf();
@@ -402,7 +402,7 @@ function IsBad(x) {
                             isBadMessage = 'IsBad() : false : negative float : ' + x.valueOf();
                             return false;
                         } else {
-                            isBadMessage = 'IsBad() : true : float out of range : ' + x.valueOf();
+                            isBadMessage = 'IsBad() : true : float out of accuracy range : ' + x.valueOf();
                             return true;
                         }
                     }
@@ -862,7 +862,7 @@ var IsBadTester = {
         { test: 5 ** null, name: "5 ** null" },
         { test: Infinity - Infinity, name: "Infinity - Infinity" },
         { test: Infinity * 1, name: "Infinity * 1" },
-        { test: Infinity * 1, name: "Infinity * 1" },
+        { test: Infinity * undefined, name: "Infinity * undefined" },
         { test: Number(null), name: "Number(null)" },
         { test: 2 + null, name: "2 + null" },
         { test: 2 + undefined, name: "2 + undefined" },
