@@ -30,7 +30,7 @@ License: GNU GENERAL PUBLIC LICENSE VERSION 3
 // 14. Bad Numbers, Number constructors, or calculations returned as NaN values
 // 15. Numbers outside the safe integer ranges (beyond +-9007199254740991)
 // 16. BigInts outside the JavaScript MAX_VALUE range (beyond 1.79e+308)
-// 17. Floats within 9 decimal precision ranges or the +-Number.MAX_VALUE to +-Number.MIN_VALUE range 
+// 17. Floats within 9 decimal precision ranges or the +-Number.MAX_VALUE to +-Number.MIN_VALUE range
 
 // Note: 0 (zero) will NOT be flagged as a bad value, though in the case of floats smaller than +-5E-324 will coerce them to 0. This could cause issues! Also 0/0 returns NaN, so we would catch bad calculations but not the numbers in the equation. +-1/0 is -+Infinity and the same problem if trying to avoid bad division. So use IsBad() for calculation but keep in mind 0 is not shown as a bad value beforehand.
 // "IsBad" is a useful tool to indicate a variable has a bad, empty, or non-value, or is an object in a state where nothing can be done with it. It helps you avoid weird issues where false truthy statements occur, and allows developer to avoid the variable value or reset it since it has no assigned value or zero use cases in program logic. Also avoid math errors like dividing by zero, NaN, etc.
@@ -41,10 +41,15 @@ License: GNU GENERAL PUBLIC LICENSE VERSION 3
 
 // ------------------------------------------------------------
 
-// "IfBad()" is an overload for "IsBad()" and returns a default "d" value of the developers choice if a bad or empty value is detected.
+// "IfBad()" is an overload for "IsBad()" and returns either the original "x" parameter entered, or a default "d" value of the developers choice if a bad or empty value is detected. This powerful version allows you to embed this function into expressions in JavaScript and keep processing values rather than stop and do conditional checks!
+
 function IfBad(x, d) {
     'use strict';
-    if (IsBad(x)) return d;
+    if (IsBad(x)) {
+        return d;// return a default value if bad
+    } else {
+        return x;// return original value if good
+    }
 }
 
 // ------------------------------------------------------------
@@ -1015,3 +1020,526 @@ var IsBadTester = {
 
 
 // ------------------------------------------------------------
+
+
+// "IfNull()" is an overload for "IsNull()" and returns either the original "x" parameter entered, or a default "d" value of the developers choice if a bad or empty value is detected. This powerful version allows you to embed this function into expressions in JavaScript and keep processing values rather than stop and do conditional checks!
+
+function IfNull(x,d)
+{
+    'use strict';
+    if (IsNull(x))
+    {
+        return d;// return a default value if bad
+    } else {
+        return x;// return original value if good
+    }
+}
+
+
+// IsNull() : Improved Null Checker
+
+// JavaScripts new "null coalescing" logic has holes and is broken. It misses a number of values and types, is vulnerable to a ReferenceError, and confuses developers with ternary truthy checks and the object property unary "?" operator which does detect undeclared object properties correctly. This new function "IsNull()" clarifies and fixes those bugs!
+
+
+// TWO MAJOR FLAWS exist in current JavaScript error checking in all versions:
+
+// 1. TRUTHY STATEMENTS (if(truthy){...} or "truthy ? true : false") - Truthy statements are not consistent, and FALSE with empty strings "" but not " ", 0 but not "0", and numeric floats that collapse to 0 which means some decimal values are false and others true! (thiose less than 1.0E-324). In addition, missing or undeclared variables create a ReferenceError in JavaScript!
+// 2. NULL COALESCING STATEMENTS - Coalesce statements of various kinds are NOYT consistent and give different results. For starters, they fail to respond to NaN and undeclared/missing variables that create an Error. They also conflict with Truthy Statements in detecting empty strings, false, and 0, which you may or may not wants.
+
+// Increasing "value"" of a variable, least defined to most define defined...
+// * no variable            - type of 'undefined', value = * none (reference error!)
+// var myvar;               - type of 'undefined', value = undefined (primitive)
+// var myvar = undefined;   - type of 'undefined', value = undefined (primitive)
+// var myvar = NaN;         - type of 'number', value = NaN (primitive)
+// var myvar = null;        - type of 'object', value = null (primitive)
+// var myvar = "";          - type of 'string', value = "test" (primitive)
+
+// A Note on Object Properties : When checking for missing properties of objects using the conditional (ternary) operator (?), because it does not throw an error on undeclared properties like variables do, it safely returns undefined for ?? null coalescence tests rather that Truthy false coerced values. However, it too will not catch NaN. "?" does a form of truthy check to see if an object property even exists below. Returns "undefined" primitive values if not, which below triggers the null coalescent default value.
+
+//const person={
+//    name: "John"
+//};
+
+// REFERENCE ERROR when object doesnt exist! "No employer defined 1"
+//alert(person??"No employer defined 1");
+
+// Safe undefined primitive returned - "No employer defined 2"
+//alert(person?.employer??"No employer defined 2");
+
+// Safe undefined primitive returned - "No employer defined 3"
+//alert(person?.employer?.toLowerCase()??"No employer defined 3");
+
+
+// * The method below returns JUST those values below that would blow up any operation, calculation, coercion, or other exptression in JavaScript. The logic below also avoids the inconsistent nature of "if/then" truthy statements, or using the ternary operator "truthy ? true : false". And it also avoids null coalescence which is missing NaN and undeclared variables. It combines the two but throws out the inconsistent expectations of various bad data scenarios. IsNull() simply checks for null or empty values, which includes NaN, null, undefined, and missing variable references, but ignores the rest (false, 0, "0", "", float collapse to 0, etc.) which have no impact on most data.
+
+// * My improved IsNull() function allows you to AVOID the four bad null type of values that cause errors or issues. It checks for the following:
+
+// - undefined types - undeclared/missing variables
+// - undefined primitives - declared but not initialized values, missing object properties, explicit or assigned undefined primitive values.
+// - NaN
+// - null
+
+
+// Improved null check
+function IsNull(x)
+{
+    'user strict';
+    try
+    {
+        if (typeof x==='undefined'
+            ||x===undefined
+            ||x===null
+            ||x!==x)
+        {
+            return true;
+        } else {
+            return false;
+        }
+    } catch (e)
+    {
+        if (typeof console!=='undefined'&&console.error)
+        {
+            console.error('ERROR : Function IsNull() : '+e);
+        } else if (typeof console!=='undefined'&&console.warn)
+        {
+            console.warn('WARNING : Function IsNull() : '+e);
+        } else if (typeof console!=='undefined'&&console.log)
+        {
+            console.log('ERROR : Function IsNull() : '+e);
+        }
+        return true;
+    }
+}
+
+// ------------------------------------------------------------
+
+// STRICT NUMBER CHECK (overload with default value)
+// n - number value to check for NaN
+// d - default fallback value to use if number fails
+function IfStrictNum(n,d)
+{
+    'use strict';
+    if (IsStrictNum(n))
+    {
+        return n;
+    } else
+    {
+        return d;
+    }
+}
+
+// Returns false for BigInt values, only Number types pass
+// Note: Needs a float in-range check
+function IsStrictNum(n)
+{
+    'use strict';
+    try
+    {
+        if (typeof n==='symbol')
+        {
+            return false;
+        } else if (typeof n==='bigint')
+        {
+            return false;
+        } else if ((n===n)
+            &&!Number.isNaN(n)
+            &&!isNaN(parseFloat(n))
+            &&isFinite(n)
+            &&n>=Number.MIN_SAFE_INTEGER
+            &&n<=Number.MAX_SAFE_INTEGER)
+        {
+            return true;
+        } else
+        {
+            return false;
+        }
+    } catch (e)
+    {
+        if (typeof console!=='undefined'&&console.error)
+        {
+            console.error('ERROR : Function IsNumTester() : '+e);
+        } else if (typeof console!=='undefined'&&console.warn)
+        {
+            console.warn('WARNING : Function IsNumTester() : '+e);
+        } else if (typeof console!=='undefined'&&console.log)
+        {
+            console.log('ERROR : Function IsNumTester() : '+e);
+        }
+        return false;
+    }
+}
+
+// NUMBER CHECK (overload with default value)
+// n - number value to check for NaN
+// d - default fallback value to use if number fails
+function IfNum(n,d)
+{
+    'use strict';
+    if (IsNum(n))
+    {
+        return n;
+    } else
+    {
+        return d;
+    }
+}
+
+// NUMBER CHECK
+// Check for any valid numeric, float, or bigint value
+// Infinity, undefined, NaN, objects, empty strings, non-numeric strings, out-of-range Integers not included.
+// Booleans and nulls are NOT included even though they get coerced to 0 or 1. However, if you pass in an expression (like: null*1) with boolean or null values that successfully create a valid number they will pass.
+// Any calculated value that returns Infinity, NaN, null, undefined, etc are excluded.
+// Calculated expressions that return a numeric value are included. Example: 0/infinity=0 collapses to 0 so would be accepted. But Infinity/0=Infinity would not
+// Successfully parsed strings that are numeric are included
+// BigInt values are included so be careful when using them as Number types! (see alternative function that excludes bigint)
+// Note: Needs a float in-range check or use the one in my IsBad() function
+
+function IsNum(n)
+{
+    'use strict';
+    try
+    {
+        if (typeof n==='symbol')
+        {
+            return false;
+        } else if (typeof n==='bigint')
+        {
+            if ((n===n)
+                &&BigInt(n)>=BigInt(-(Number.MAX_VALUE))
+                &&BigInt(n)<=BigInt(Number.MAX_VALUE))
+            {
+                return true;
+            } else
+            {
+                return false;
+            }
+        } else if ((n===n)
+            &&!Number.isNaN(n)
+            &&!isNaN(parseFloat(n))
+            &&isFinite(n)
+            &&n>=Number.MIN_SAFE_INTEGER
+            &&n<=Number.MAX_SAFE_INTEGER)
+        {
+            return true;
+        } else
+        {
+            return false;
+        }
+    } catch (e)
+    {
+        if (typeof console!=='undefined'&&console.error)
+        {
+            console.error('ERROR : Function IsNumTester() : '+e);
+        } else if (typeof console!=='undefined'&&console.warn)
+        {
+            console.warn('WARNING : Function IsNumTester() : '+e);
+        } else if (typeof console!=='undefined'&&console.log)
+        {
+            console.log('ERROR : Function IsNumTester() : '+e);
+        }
+        return false;
+    }
+};
+
+// IsNumTester()
+// Use the "bad data" tests below to see what the "IsNum()" method finds and determines is bad data. Loop through all tests and return list of valid values.
+
+var IsNumTester={
+    start: function()
+    {
+        'use strict';
+        // Print result in Developer Tools (F12) console section in the web browser.
+        console.log('IsNumTester() : Start');
+        var a=this.Test(this.testdata);
+        return null;
+    },
+    Test: function(data)
+    {
+        'use strict';
+        for (var i=0;i<data.length;i++)
+        {
+            try
+            {
+
+                // Print result in Developer Tools (F12) console section in the web browser.
+                console.log('IsNumTester() : '+IsNum(data[i].test)+' : '+data[i].name);
+                //console.log('IsNumTester() : '+IsNum(data[i].test)+' : '+data[i].name);
+
+            } catch (e)
+            {
+
+                if (typeof console!=='undefined'&&console.error)
+                {
+                    console.error('ERROR : Function IsNumTester() : '+e);
+                } else if (typeof console!=='undefined'&&console.warn)
+                {
+                    console.warn('WARNING : Function IsNumTester() : '+e);
+                } else if (typeof console!=='undefined'&&console.log)
+                {
+                    console.log('ERROR : Function IsNumTester() : '+e);
+                }
+
+            }
+        };
+        return null;
+    },
+    // TEST VALUES
+    testdata: [
+        {test: false,name: "false"},
+        {test: 0,name: "0"},
+        {test: 0.0,name: "0.0"},
+        {test: 0x0,name: "0x0"},
+        {test: -0,name: "-0"},
+        {test: -0.0,name: "-0.0"},
+        {test: -0x0,name: "-0x0"},
+        {test: 0n,name: "0n"},
+        {test: 0x0n,name: "0x0n"},
+        {test: 8,name: "8"},
+        {test: '8',name: "'8'"},
+        {test: '-10',name: "'-10'"},
+        {test: '0',name: "'0'"},
+        {test: '5',name: "'5'"},
+        {test: '+10',name: "'+10'"},
+        {test: -16,name: "-16"},
+        {test: 0,name: "0"},
+        {test: -0,name: "-0"},
+        {test: 32,name: "32"},
+        {test: '040',name: "'040'"},
+        {test: 0144,name: "0144"},// octal
+        {test: 0o0144,name: "0o0144"},// octal
+        {test: '0xFF',name: "'0xFF'"},
+        {test: '-0x42',name: "'-0x42'"},
+        {test: 0xFF,name: "0xFF"},
+        {test: 1101,name: "1101"},// does JavaScript translate to an integer or bindary?
+        {test: 0b11111111,name: "0b11111111"},// binary
+        {test: 0b1111,name: "0b1111"},
+        {test: 9007199254740991,name: "9007199254740991"},// max value acceptable in JavaScript
+        {test: 9007199254740991n,name: "9007199254740991n"},// max value acceptable in JavaScript
+        {test: 9007199254740992,name: "9007199254740992"},// fail as integer
+        {test: 9007199254740992n,name: "9007199254740992n"},// acceptable when a BigInt
+        {test: '9007199254740992',name: "'9007199254740992'"},
+        {test: '9007199254740992n',name: "'9007199254740992n'"},// why to use strings to hold giant numbers
+        {test: 0xffffffffffffff,name: "0xffffffffffffff"},
+        {test: 0o377777777777777777,name: "0o377777777777777777"},
+        {test: 0b11111111111111111111111111111111111111111111111111111,name: "0b11111111111111111111111111111111111111111111111111111"},// max binary
+        {test: 0b111111111111111111111111111111111111111111111111111111,name: "0b111111111111111111111111111111111111111111111111111111"},
+        {test: '-1.6',name: "'-1.6'"},
+        {test: '4.536',name: "'4.536'"},
+        {test: '4,536',name: "'4,536'"},
+        {test: '123abc',name: "'123abc'"},
+        {test: -2.6,name: "-2.6"},
+        {test: -0.0,name: "-0.0"},
+        {test: 0.0,name: "0.0"},
+        {test: 3.1415,name: "3.1415"},
+        {test: 5.0000000000000000000000000000000001,name: "5.0000000000000000000000000000000001"},
+        {test: 4500000000000000.1,name: "4500000000000000.1"},
+        {test: 4500000000000000.5,name: "4500000000000000.5"},
+        {test: 999999999999999999999999999999999999999999999999999999999999999999999.0000000000000000000000000000,name: "999999999999999999999999999999999999999999999999999999999999999999999.0000000000000000000000000000"},
+        {test: 000001,name: "000001"},
+        {test: 0o000001,name: "0o000001"},
+        {test: 8e5,name: "8e5"},
+        {test: 234e+7,name: "234e+7"},
+        {test: -123e12,name: "-123e12"},
+        {test: '123e-2',name: "'123e-2'"},
+        {test: BigInt(55),name: "BigInt(55)"},
+        {test: BigInt('55'),name: "BigInt('55')"},
+        {test: 1.0e+15,name: "1.0e+15"},// within safe integer range of ~ 9 quadrillion
+        {test: 1.0e+16,name: "1.0e+16"},// beyond max safe JavaScript integer value of ~ 9 quadrillion
+        {test: BigInt(1.0e+16),name: "BigInt(1.0e+16)"},// converted to bigint the number is in range
+        {test: 1.79E+308,name: "1.79E308"},// max value JavaScript says it can hold in memory
+        {test: BigInt(1.79E+308),name: "BigInt(1.79E308)"},
+        {test: 1.7976931348623157e+308,name: "1.7976931348623157e+308"},
+        {test: BigInt(1.7976931348623157e+308),name: "BigInt(1.7976931348623157e+308)"},
+        //{test:BigInt(1.7976931348623157e+309),name:"BigInt(1.7976931348623157e+309)"},// fails as BigInt() says number acts as Infinity and not an integer
+        //{test:BigInt(1.79E500),name:"BigInt(1.79E500)"},// fails as BigInt() says number acts as Infinity and not an integer
+        //{test:BigInt(-1.79E500),name:"BigInt(-1.79E500)"},// fails as BigInt() says number acts as Infinity and not an integer
+        {test: -9007199254740991,name: "-9007199254740991"},
+        {test: -9007199254740992,name: "-9007199254740992"},
+        {test: -9007199254740992n,name: "-9007199254740992n"},
+        {test: BigInt(-9007199254740992),name: "BigInt(-9007199254740992)"},
+        {test: 1.0E-10,name: "1.0E-10"},// in range using my 9 decimal max precision logic
+        {test: -1.0E-10,name: "-1.0E-10"},
+        {test: 0.9E-10,name: "0.9E-10"},// out of range using my 9 decimal max precision logic
+        {test: -0.9E-10,name: "-0.9E-10"},
+        {test: 5.5555555E-20,name: "5.5555555E-20"},
+        {test: -5.5555555E-20,name: "-5.5555555E-20"},
+        {test: 5E-324,name: "5E-324"},// max positive decimal number
+        {test: -5E-324,name: "-5E-324"},// max minimum decimal number
+        {test: 5E-325,name: "5E-325"},// reverts to 0 after max so ok
+        {test: -5E-325,name: "-5E-325"},// reverts to 0 after max so ok
+        {test: 1.7976931348623157e-500,name: "1.7976931348623157e-500"},// Returns 0 and false! JavaScript converts any decimal number smaller than 5E-324 (the smallest number) to 0 by default. So no way to stop or fix this script flaw! Be careful as division by this value would then return 0/0 as NaN and all others +-Infinity.
+        {test: -1.7976931348623157e-500,name: "-1.7976931348623157e-500"},// Returns 0 and false! JavaScript converts any decimal number smaller than 5E-324 (the smallest number) to 0 by default. So no way to stop or fix this script flaw! Be careful as division by this value would then return 0/0 as NaN and all others +-Infinity.
+        {test: null,name: "null"},
+        {test: undefined,name: "undefined"},
+        {test: NaN,name: "NaN"},
+        {test: 0/0,name: "0/0"},
+        {test: 0.1/0,name: "0.1/0"},
+        {test: -1/0,name: "-1/0"},
+        {test: 1/Infinity,name: "1/Infinity"},
+        {test: Infinity/0,name: "Infinity / 0"},
+        {test: "foo"/3,name: "'foo'/3"},
+        {test: 0/undefined,name: "0 / undefined"},
+        {test: 0/NaN,name: "0 / NaN"},
+        {test: 0/+Infinity,name: "0 / +Infinity"},
+        {test: 0/-Infinity,name: "0 / -Infinity"},
+        {test: 1/0,name: "1 / 0"},
+        {test: 1/undefined,name: "1 / undefined"},
+        {test: 1/NaN,name: "1 / NaN"},
+        {test: 1/+Infinity,name: "1 / +Infinity"},
+        {test: 1/-Infinity,name: "1 / -Infinity"},
+        {test: 0*Infinity,name: "0 * Infinity"},
+        {test: 1*Infinity,name: "1 * Infinity"},
+        {test: 0*null,name: "0 * null"},
+        {test: 0*undefined,name: "0 * undefined"},
+        {test: 0*NaN,name: "0 * NaN"},
+        {test: 1*null,name: "1 * null"},
+        {test: 1*undefined,name: "1 * undefined"},
+        {test: 1*NaN,name: "1 * NaN"},
+        {test: null*null,name: "null * null"},
+        {test: 5**undefined,name: "5 ** undefined"},
+        {test: 5**NaN,name: "5 ** NaN"},
+        {test: 5**null,name: "5 ** null"},
+        {test: Infinity-Infinity,name: "Infinity - Infinity"},
+        {test: Infinity*1,name: "Infinity * 1"},
+        {test: Infinity*undefined,name: "Infinity * undefined"},
+        {test: Number(null),name: "Number(null)"},
+        {test: 2+null,name: "2 + null"},
+        {test: 2+undefined,name: "2 + undefined"},
+        {test: 2+Infinity,name: "2 + Infinity"},
+        {test: Number(' '),name: "Number(' ')"},
+        {test: Number(),name: "Number()"},
+        {test: Number(22),name: "Number(22)"},
+        {test: Number(123.123),name: "Number(123.123)"},
+        {test: Number('xyz'),name: "Number('xyz')"},
+        {test: Number(Infinity),name: "Number(Infinity)"},
+        {test: Number(NaN),name: "Number(NaN)"},
+        {test: new Number(),name: "new Number()"},
+        {test: new Number(22),name: "new Number(22)"},
+        {test: new Number(123.123),name: "new Number(123.123)"},
+        {test: new Number('xyz'),name: "new Number('xyz')"},
+        {test: new Number(Infinity),name: "new Number(Infinity)"},
+        {test: new Number(NaN),name: "new Number(NaN)"},
+        {test: Infinity,name: "Infinity"},
+        {test: +Infinity,name: "+Infinity"},
+        {test: -Infinity,name: "-Infinity"},
+        {test: new Number(Infinity),name: "new Number(Infinity)"},
+        {test: new Number(+Infinity),name: "new Number(+Infinity)"},
+        {test: new Number(-Infinity),name: "new Number(-Infinity)"},
+        {test: new Number(Number.MAX_SAFE_INTEGER),name: "new Number(Number.MAX_SAFE_INTEGER)"},
+        {test: new Number(Number.MIN_SAFE_INTEGER),name: "new Number(Number.MIN_SAFE_INTEGER)"},// this is a negative number version of the max version above!
+        {test: new Number(Number.MAX_SAFE_INTEGER+1),name: "new Number(Number.MAX_SAFE_INTEGER+1)"},// this puts number out of integer acceptable ranges
+        {test: new Number(Number.MIN_SAFE_INTEGER-1),name: "new Number(Number.MIN_SAFE_INTEGER-1)"},
+        {test: Number.POSITIVE_INFINITY,name: "Number.POSITIVE_INFINITY"},
+        {test: Number.NEGATIVE_INFINITY,name: "Number.NEGATIVE_INFINITY"},
+        {test: Number.MAX_VALUE,name: "Number.MAX_VALUE"},// max positive number allowed in JavaScript
+        {test: -Number.MAX_VALUE,name: "-Number.MAX_VALUE"},// max negative number allowed in JavaScript
+        {test: Number.MIN_VALUE,name: "Number.MIN_VALUE"},// smallest positive decimal number approaching zero. Any decimal smaller than this value is cast as 0 in JavaScript, so never a valid bad value test!
+        {test: -(Number.MIN_VALUE),name: "-(Number.MIN_VALUE)"},// smallest negative decimal number approaching zero.
+        {test: BigInt(Number.MAX_VALUE),name: "BigInt(Number.MAX_VALUE)"},
+        {test: BigInt(Number.MAX_VALUE+1),name: "BigInt(Number.MAX_VALUE+1)"},// This may pass due to variations in precision past max values. Once it fails the BigInt cast itself will generate an error here, not in the function check, and convert value to "Infinity" which blows up the BigInt conversion method.
+        {test: BigInt(-(Number.MAX_VALUE)),name: "BigInt(-(Number.MAX_VALUE))"},
+        {test: BigInt(-(Number.MAX_VALUE+1)),name: "BigInt(-(Number.MAX_VALUE+1))"},
+        //{test:BigInt(Number.MAX_VALUE+Number.MAX_VALUE),name:"BigInt(Number.MAX_VALUE+Number.MAX_VALUE)"},// fails because addition creates "Infinity"
+        //{test:BigInt(.00001),name:"BigInt(.00001)"},// not allowed
+        //{test:BigInt(Infinity),name:"BigInt(Infinity)"},// not allowed
+        {test: Number.EPSILON,name: "Number.EPSILON"},
+        {test: {},name: "{}"},
+        {test: ({}),name: "({})"},
+        {test: {x: 3},name: "{x:3}"},
+        {test: {undefined},name: "{undefined}"},
+        //{test:{null},name:"{null}"},// not allowed
+        {test: {NaN},name: "{NaN}"},
+        {test: new Object(),name: "new Object()"},
+        {test: new Object({x: 3}),name: "new Object({x:3})"},
+        {test: new Object({undefined}),name: "new Object({undefined})"},
+        //{test:new Object({null}),name:"new Object({null})"},// not allowed
+        {test: new Object({NaN}),name: "new Object({NaN})"},
+        {test: function() {},name: "function(){}"},
+        {test: function() {x: 3},name: "function(){x:3}"},
+        {test: function() {undefined},name: "function(){undefined}"},
+        {test: function() {null},name: "function(){null}"},
+        {test: function() {NaN},name: "function(){NaN}"},
+        {test: window,name: "window"},
+        {test: [],name: "[]"},
+        {test: [3],name: "[3]"},
+        {test: Array(),name: "Array()"},
+        {test: Array(null),name: "Array(null)"},
+        {test: Array(undefined),name: "Array(undefined)"},
+        {test: new Array(),name: "new Array()"},
+        {test: new Array(null),name: "new Array(null)"},
+        {test: new Array(undefined),name: "new Array(undefined)"},
+        {test: "",name: "\"\""},
+        {test: '',name: "''"},
+        {test: ``,name: "``"},
+        {test: '        ',name: "'        '"},
+        {test: '\t',name: "'\\t'"},
+        {test: '\r\n',name: "'\\r\\n'"},
+        {test: 'bcfed5.2',name: "'bcfed5.2'"},
+        {test: '3.1000000n',name: "'3.1000000n'"},
+        {test: '7.2acdgs',name: "'7.2acdgs'"},
+        {test: new String('\t'),name: "new String('\\t')"},
+        {test: new String('\r\n'),name: "new String('\\r\\n')"},
+        {test: 'xabcdefx',name: "'xabcdefx'"},
+        {test: 'abcdefghijklm1234567890',name: "abcdefghijklm1234567890"},
+        {test: String(),name: "String()"},
+        {test: String('hello'),name: "String('hello')"},
+        {test: String(-0.0),name: "String(-0.0)"},
+        {test: new String(),name: "new String()"},
+        {test: new String('hello'),name: "new String('hello')"},
+        {test: new String(-0.0),name: "new String(-0.0)"},
+        {test: '1/1/2020',name: "'1/1/2020'"},
+        {test: Date(),name: "Date()"},
+        {test: Date('1/1/2022'),name: "Date('1/1/2022')"},
+        {test: Date('0/50/10'),name: "Date('0/50/10')"},
+        {test: Date(1/1/2022),name: "Date(1/1/2022)"},
+        {test: Date(2009,1,1),name: "Date(2009, 1, 1)"},
+        {test: Date('xyz'),name: "Date('xyz')"},
+        {test: Date(-0.00001),name: "Date(-0.00001)"},
+        {test: Date(undefined),name: "Date(undefined)"},
+        {test: Date(null),name: "Date(null)"},
+        {test: Date(NaN),name: "Date(NaN)"},
+        {test: new Date(),name: "new Date()"},
+        {test: new Date('1/1/2022'),name: "new Date('1/1/2022')"},
+        {test: new Date('0/50/10'),name: "new Date('0/50/10')"},
+        {test: new Date(1/1/2022),name: "new Date(1/1/2022)"},
+        {test: new Date(2009,1,1),name: "new Date(2009, 1, 1)"},
+        {test: new Date('xyz'),name: "new Date('xyz')"},
+        {test: new Date(-0.00001),name: "new Date(-0.00001)"},
+        {test: new Date(undefined),name: "new Date(undefined)"},
+        {test: new Date(null),name: "new Date(null)"},
+        {test: new Date(NaN),name: "new Date(NaN)"},
+        {test: true,name: "true"},
+        {test: false,name: "false"},
+        {test: Boolean(),name: "Boolean()"},
+        {test: Boolean('xyz'),name: "Boolean('xyz')"},
+        {test: Boolean(true),name: "Boolean(true)"},
+        {test: new Boolean(),name: "new Boolean()"},
+        {test: new Boolean('xyz'),name: "new Boolean('xyz')"},
+        {test: new Boolean(Infinity),name: "new Boolean(Infinity)"},
+        {test: new Boolean(true),name: "new Boolean(true)"},
+        {test: new RegExp(),name: "new RegExp()"},
+        {test: new RegExp(33),name: "new RegExp(33)"},
+        {test: new RegExp('33'),name: "new RegExp('33')"},
+        {test: new RegExp(Infinity),name: "new RegExp(Infinity)"},
+        {test: new RegExp(null),name: "new RegExp(null)"},
+        {test: new RegExp(NaN),name: "new RegExp(NaN)"},
+        {test: new RegExp(undefined),name: "new RegExp(undefined)"},
+        {test: new RegExp('/^\s*$/'),name: "new RegExp('/^\s*$/')"},
+        {test: RegExp(),name: "RegExp()"},
+        {test: RegExp(33),name: "RegExp(33)"},
+        {test: RegExp(Infinity),name: "RegExp(Infinity)"},
+        {test: RegExp(null),name: "RegExp(null)"},
+        {test: RegExp(NaN),name: "RegExp(NaN)"},
+        {test: RegExp(undefined),name: "RegExp(undefined)"},
+        {test: RegExp('/^\s*$/'),name: "RegExp('/^\s*$/')"},
+        {test: Symbol(),name: "Symbol()"},
+        {test: Symbol('test'),name: "Symbol('test')"}
+    ]
+};
+
+// IsNum() Function : Run a test of bad data below!
+//IsNumTester.start();
+
+// ------------------------------------------------------------
+
+
