@@ -11,7 +11,7 @@ Summary: JavaScript IsBad Function is a method to detect bad values.
 
 Description: JavaScript (ECMAScript) uses "dynamic variables", which means they can change type and value at any time. Bad design! As such, JavaScript runs the constant risk of blowing up whenever it accesses variables!
 
-Many will say, that should rarely happen the way they manage block-level variables and use conditional checks. But the past 20+ years JavaScript has consistently generated billions of errors in websites all over the world, shutting down browsers, blocking data, and destroying page views in millions of browsers around the world. A single error can stop your scripts from running in a web page and disable a web page for millions of people instantly. There is also the open possibility with JavaScript variables that they could be reassigned a completely different data type, be type-cast, or coerced to some alien value that is totally unexpected. This then blows up a database, pollutes JSON values, or wrecks some other data storage or transfer format.
+Many will say, that should rarely happen the way they manage block-level variables and use conditional checks. But the past 20+ years JavaScript has consistently generated billions of errors in websites all over the world, shutting down browsers, blocking data, and destroying page views in millions of browsers around the world. A single error can stop your scripts from running in a web page and disable a web page for millions of people instantly. There is also the open possibility with JavaScript variables that they could be reassigned a completely different data type, be missing/undeclared, or be miscast/coerced to some alien value that is totally unexpected. This then blows up a database, pollutes JSON values, or wrecks some other data storage or transfer format.
 
 To avoid this problem I have built a simple "IsBad()" JavaScript function that allows you to quickly check if your variable, function, or object has created a value that might blow up your scripts, create bad objects, create out-of-range numeric values, generate a bad math calculation, return an empty value, is undefined, is NaN, is null, or would simply create an error or exception you are not prepared to handle. It will handle any type of number, string, date, object, or other data type coming in and quickly give you a general idea via a simple boolean value if anything "bad" has occurred in the value run through the function. I have found there are hundreds of crazy scenarios where unexpected things can occur in JavaScript that create terrible results. So, with my "IsBad()" function, you can quickly return a Boolean value (true/false) that will tell you if a variable value is going to cause an unexpected problem.
 
@@ -47,7 +47,16 @@ The "IsBad()" function is in a SINGLE JAVASCRIPT FILE so very easy to copy-and-p
 
 In addition, I have added a very comprehensive "IsBadTester()" function with a giant array of typical BAD JAVASCRIPT DATA VALUES you can run and then review as results in the browser console developer tools. This allows you to check what exactly the IsBad() function returns for various types of numeric and non-numeric data. Just run the "IsBadTester()" function and it will list in the console window of the browser's developer tools a large list of "bad" and "good" data test results returned from the "IsBad()" function you can review. Feel free to add to my my bad data list and run your own bad data tests!
 
-Please keep in mind this is version 1.0 of this function, and it will likely have many new goodies and improvements going forward.
+BONUS!
+
+In addition, I have added a full suite of excellent error-checking JavaScript functions that patch holes and bugs in the new null coalesce, truthy, falsy, or conditional ternary operators in ECMAScript that will fail or confuse programmers in many scenarios. These new functions allow you to purely check for edge-case values that might blow up your JS applications, or which combine the checks of multiple other operators into one. The IsBad() mother function included most of these features alread. But these functions allow you a narrower target for detecting smaller bug-checking scenarios in your data. And like IfBad(), all have built in default value return parameters so you can easily call these inside expressions and keep your code logic moving forward. They include the following new functions in JavaScript:
+
+- IsNull()/IfNull()
+- IsNum()/IfNum()
+- IsStrictNum/IfStrictNum()
+
+
+Please keep in mind this is version 1.0 of these functions, and they will likely have many new goodies and improvements going forward.
 
 - Mitchell Stokely, 2022
 ---
