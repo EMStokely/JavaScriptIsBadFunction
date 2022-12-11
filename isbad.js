@@ -57,12 +57,12 @@ function IfBad(x, d) {
 // "IsBad()" returns true-false boolean
 // Optional: You canm also assign this function to the prototype, if needed as a property of all prototypes using the following: "Object.prototype.IsBad = function (x){}"
 
-var isBadMessage = '';
+var IsBadMessage = '';
 function IsBad(x) {
 
     'use strict';
 
-    isBadMessage = 'IsBad() : no message';
+    IsBadMessage = 'IsBad() : no message';
 
     try {
 
@@ -71,20 +71,20 @@ function IsBad(x) {
         // 1. The first check catches a variable that does NOT exist (undefined/undeclared) that has a type of 'undefined', or a declared variable that is not initialized/assigned to a value yet (assigned to the undefined primitive).
         // 2. The second check catches the latter part of the logic above, a declared variable that is not initialized/assigned to a value yet (assigned to the undefined primitive).
         if (typeof x === 'undefined' || x === undefined) {
-            isBadMessage = 'IsBad() : true : undefined';
+            IsBadMessage = 'IsBad() : true : type = undefined';
             return true;
         }
 
         // Null Check
         // Note: This does not coerce a null from a variable like '==' would do, just checks for the explicit value.
         if (x === null) {
-            isBadMessage = 'IsBad() : true : null';
+            IsBadMessage = 'IsBad() : true : type = Object (null)';
             return true;
         }
 
         // ALERT: Catch All Symbol Checks here as they are always unique and never bad data! Symbols can not be empty and dont have constructors so cannot be created using "new Symbol()".
         if (typeof x === 'symbol') {
-            isBadMessage = 'IsBad() : false : symbol';
+            IsBadMessage = 'IsBad() : false : type = Symbol';
             return false;
         }
 
@@ -156,8 +156,8 @@ function IsBad(x) {
 
         // isNaN vs Number.isNaN
         // isNaN will always coerce first then check that value if NaN
-        // Number.isNan will never coerce and just see if the value is a number
-        // However, do note the difference between isNaN() and Number.isNaN(): the former will return true if the value is currently NaN, or if it is going to be NaN after it is coerced to a number, while the latter will return true only if the value is currently NaN.
+        // Number.isNan will never coerce and just see if the value is NaN explicitly
+        // However, do note the difference between isNaN() and Number.isNaN(): the former will return true if the value is currently NaN, or if it is going to be NaN after it is coerced to a Number type, while the latter will return true only if the value is currently and explicitly NaN.
         // isNaN('hello world');        // true
         // Number.isNaN('hello world'); // false
 
@@ -187,7 +187,7 @@ function IsBad(x) {
         // This logic below checks for the raw "window.NaN" explicit value assigned to the variable without number coercion!
         // Note: We avoid using "isNaN" vs "Number.IsNaN" as the former would coerce all values to Number types and valid values like strings or objects would fail conversion. The check below ONLY looks for the value of NaN (window.NaN) explicitly set to the variable!
         if ((x !== x) || (Number.isNaN(x))) {
-            isBadMessage = 'IsBad() : true : NaN';
+            IsBadMessage = 'IsBad() : true : type = Number.NaN';
             return true;
         }
 
@@ -201,23 +201,35 @@ function IsBad(x) {
             || x === -Infinity
             || (Number.POSITIVE_INFINITY && x === Number.POSITIVE_INFINITY)
             || (Number.NEGATIVE_INFINITY && x === Number.NEGATIVE_INFINITY)) {
-            isBadMessage = 'IsBad() : true : infinity : ' + x;
+            IsBadMessage = 'IsBad() : true : type = Number.Infinity : ' + x;
             return true;
         }
 
 
+
+        // BETTER WAY TO CHECK FOR ANY TYPE IN JAVASCRIPT WAS ADDED BELOW!
+        // All Types in JavaScript can be checked using 'constructor' as follows:
+        // let x = 12345;
+        // (typeof x !== 'undefined' && (x).constructor === Number);// true
+        // ALERT: 'constructor' type checks are confirmed on both the primitice and "new" object versions!
+
+
+
+
         // Array and Array Constructor Check : Since all array are objects, we check array before object test below. Arrays, unlike Number, String, etc. does NOT have a Array "typeof" primitive type, as it is an object.
+
         if (Array &&
             (x instanceof Array
                 || (Object.prototype.toString.call(x) === '[object Array]')
-                || Array.isArray(x))
+                || Array.isArray(x)
+                || (x).constructor === Array)
             && (typeof x.length === 'number')
         ) {
             if (x.length === 0) {
-                isBadMessage = 'IsBad() : true : empty array : ' + x;
+                IsBadMessage = 'IsBad() : true : type = Array (empty) : ' + x;
                 return true;
             } else {
-                isBadMessage = 'IsBad() : false : array : ' + x;
+                IsBadMessage = 'IsBad() : false : type = Array : ' + x;
                 return false;
             }
         }
@@ -225,8 +237,7 @@ function IsBad(x) {
 
         // String Primitive and String Object Constructor Check
         if ((typeof x === 'string')
-            || (String && (x instanceof String || (Object.prototype.toString.call(x) === '[object String]')))
-        ) {
+            || (String && (x instanceof String || (Object.prototype.toString.call(x) === '[object String]') ||  (x).constructor === String))) {
             // Note: "new String()" creates an empty string "" so is a bad value in this function, unlike new Number and new Boolean values.
 
             // We can convert both string primitive and string objects to a string to test if empty.
@@ -241,10 +252,10 @@ function IsBad(x) {
                 testString = testString.replace(/[\t\n\r]/gm, '');
             }
             if (testString === '') {
-                isBadMessage = 'IsBad() : true : empty string : ' + x;
+                IsBadMessage = 'IsBad() : true : type = String (empty) : ' + x;
                 return true;
             } else {
-                isBadMessage = 'IsBad() : false : string : ' + x;
+                IsBadMessage = 'IsBad() : false : type = String : ' + x;
                 return false;
             }
 
@@ -264,31 +275,31 @@ function IsBad(x) {
 
 
         // Boolean Primitive and Boolean Object Constructor Check
-// ALERT: For now all booleans are flagged as non-bad as even bad values get coerced to true-false!
+        // ALERT: For now all booleans are flagged as non-bad as even bad values get coerced to true-false!
         if (typeof x === 'boolean') {
 
             // If a bad or missing value comes in for a Boolean primitive, whether explicit or coerced, we flag the value as bad.
             if (x === true || x === false) {
-                isBadMessage = 'IsBad() : false : boolean : ' + x;
+                IsBadMessage = 'IsBad() : false : type = Boolean : ' + x;
                 return false;
             } else {
-                isBadMessage = 'IsBad() : true : bad boolean : ' + x;
+                IsBadMessage = 'IsBad() : true : type = Boolean (bad) : ' + x;
                 return true;
             }
 
-        } else if (Boolean && (x instanceof Boolean || (Object.prototype.toString.call(x) === '[object Boolean]'))) {
+        } else if (Boolean && (x instanceof Boolean || (Object.prototype.toString.call(x) === '[object Boolean]') || (x).constructor === Boolean)) {
             // If a new Boolean() object is created with any properties assigned, do not flag it as "bad" or check for values below.
             for (const property1 in x) {
-                isBadMessage = 'IsBad() : false : boolean with properties : ' + x;
+                IsBadMessage = 'IsBad() : false : type = Boolean (with properties) : ' + x;
                 return false;
             }
 
             // We type cast the Boolean, which in most cases when created using "new Boolean()" will return at least a false. Note: We cannot check if it stores a value but in most cases, like Number creating 0 or String creating "", Boolean will create false.
             if (Boolean(x) === true || Boolean(x) === false) {
-                isBadMessage = 'IsBad() : false : boolean : ' + x;
+                IsBadMessage = 'IsBad() : false : type = Boolean : ' + x;
                 return false;
             } else {
-                isBadMessage = 'IsBad() : true : bad boolean : ' + x;
+                IsBadMessage = 'IsBad() : true : type = Boolean (bad) : ' + x;
                 return true;
             }
         }
@@ -334,7 +345,7 @@ function IsBad(x) {
 
             // Logic below should RARELY catch anything since typeof 'number' here would stop ann primitive literals other than numbers. That is different for its use below for new Number() object constructor values.
             if (Number.isNaN(x * 1) || isNaN(x)) {
-                isBadMessage = 'IsBad() : true : number calc returns NaN : ' + x.valueOf();
+                IsBadMessage = 'IsBad() : true : type = Number.NaN (x * 1 check) : ' + x.valueOf();
                 return true;
             }
 
@@ -342,7 +353,7 @@ function IsBad(x) {
             // Use this to filter out any last minute non-numeric values, which should be rare based on the "typeof" Number check above!
             // Note that parseInt() is not a good way to check numeric values as parseFloat which catch some bugs.
             if (isNaN(parseFloat(x))) {
-                isBadMessage = 'IsBad() : true : isNaN(parseFloat(x)) : ' + x.valueOf();
+                IsBadMessage = 'IsBad() : true : type = Number.NaN (parseFloat(x) check) : ' + x.valueOf();
                 return true;
             }
 
@@ -399,15 +410,15 @@ function IsBad(x) {
                         // Settings below support 100% accuracy floats to 9 digits. Change this range as needed! Use MIN and MAX values if you want unlimited float number ranges but with decreesing accuracy in decimals as your number gets larger and smaller. "8388608" is the max integer range to allow guaranteed 9-decimal accurate float values!
                         //if (x >= Number.MIN_VALUE && x <= Number.MAX_VALUE) {
                         if (Number && x >= 1e-10 && x <= 8388608) {
-                            isBadMessage = 'IsBad() : false : positive float : ' + x.valueOf();
+                            IsBadMessage = 'IsBad() : false : type = Number (positive float) : ' + x.valueOf();
                             return false;
                             // Settings below support 100% accuracy floats to 9 digits. Change this range as needed! Use MIN and MAX values if you want unlimited float number ranges but with decreesing accuracy in decimals as your number gets larger and smaller.
                         //} else if (x <= -(Number.MIN_VALUE) && x >= -(Number.MAX_VALUE)) {
                         } else if (Number && x <= -(1e-10) && x >= -(8388608)) {
-                            isBadMessage = 'IsBad() : false : negative float : ' + x.valueOf();
+                            IsBadMessage = 'IsBad() : false : type = Number (negative float) : ' + x.valueOf();
                             return false;
                         } else {
-                            isBadMessage = 'IsBad() : true : float out of accuracy range : ' + x.valueOf();
+                            IsBadMessage = 'IsBad() : true : type = Number (float out of accuracy range) : ' + x.valueOf();
                             return true;
                         }
                     }
@@ -417,7 +428,7 @@ function IsBad(x) {
 
             // Check if an Integer, then run calculation. If returns NaN the flag is bad.
             if (isNaN(parseInt(x))) {
-                isBadMessage = 'IsBad() : true : number integer conversion returns NaN : ' + x.valueOf();
+                IsBadMessage = 'IsBad() : true : type = Number.NaN (parseInt(x) check) : ' + x.valueOf();
                 return true;
             }
 
@@ -425,10 +436,10 @@ function IsBad(x) {
             // Min and Max Safe Integer selects the positive and negative max ranges for integers only. These translate to +9007199254740991 to -9007199254740991.
 
             if (Number && x >= Number.MIN_SAFE_INTEGER && x <= Number.MAX_SAFE_INTEGER) {
-                isBadMessage = 'IsBad() : false : number : ' + x.valueOf();
+                IsBadMessage = 'IsBad() : false : type = Number (safe integer in range) : ' + x.valueOf();
                 return false;
             } else {
-                isBadMessage = 'IsBad() : true : number out of range : ' + x.valueOf();
+                IsBadMessage = 'IsBad() : true : type = Number (integer out of safe range) : ' + x.valueOf();
                 return true;
             }
         }
@@ -437,11 +448,11 @@ function IsBad(x) {
 
 
         // Number Object Constructor Check
-        if (Number && (x instanceof Number || (Object.prototype.toString.call(x) === '[object Number]'))) {
+        if (Number && (x instanceof Number || (Object.prototype.toString.call(x) === '[object Number]') || (x).constructor === Number)) {
 
             // First check if the new Number Object has any assigned properties. If so, its a valid value and should not be flagged as bad.
             for (const property1 in x) {
-                isBadMessage = 'IsBad() : false : number with properties : ' + x.valueOf();
+                IsBadMessage = 'IsBad() : false : type = Number (with properties) : ' + x.valueOf();
                 return false;
             }
 
@@ -451,12 +462,12 @@ function IsBad(x) {
             // ALERT: Do NOT do an equality test below (x !== x) for comparing equality of any floating point values with decimals that are coereced or calculated as they are notoriously inaccurate and would likely fail this equality check. If NaN is checked here, test below here would always fail for them!
 
             if (Number.isNaN(Number(x) * 1) || isNaN(Number(x))) {
-                isBadMessage = 'IsBad() : true : Number.isNaN(Number(x) * 1) : ' + x.valueOf();
+                IsBadMessage = 'IsBad() : true : type = Number.NaN (Number(x) * 1 check) : ' + x.valueOf();
                 return true;
             }
 
             if (isNaN(parseFloat(Number(x)))) {
-                isBadMessage = 'IsBad() : true : isNaN(parseFloat(x)) : ' + x.valueOf();
+                IsBadMessage = 'IsBad() : true : type = Number.NaN (parseFloat(x) check) : ' + x.valueOf();
                 return true;
             }
 
@@ -494,15 +505,15 @@ function IsBad(x) {
                         // Settings below support 100% accuracy floats to 9 digits. Change this range as needed! Use MIN and MAX values if you want unlimited float number ranges but with decreesing accuracy in decimals as your number gets larger and smaller.
                         //if (x >= Number.MIN_VALUE && x <= Number.MAX_VALUE) {
                         if (x >= 1e-10 && x <= 8388608) {
-                            isBadMessage = 'IsBad() : false : positive float : ' + x.valueOf();
+                            IsBadMessage = 'IsBad() : false : type = Number (positive float) : ' + x.valueOf();
                             return false;
                         // Settings below support 100% accuracy floats to 9 digits. Change this range as needed! Use MIN and MAX values if you want unlimited float number ranges but with decreesing accuracy in decimals as your number gets larger and smaller.
                         //} else if (x <= -(Number.MIN_VALUE) && x >= -(Number.MAX_VALUE)) {
                         } else if (x <= -(1e-10) && x >= -(8388608)) {
-                            isBadMessage = 'IsBad() : false : negative float : ' + x.valueOf();
+                            IsBadMessage = 'IsBad() : false : type = Number (negative float) : ' + x.valueOf();
                             return false;
                         } else {
-                            isBadMessage = 'IsBad() : true : float out of range : ' + x.valueOf();
+                            IsBadMessage = 'IsBad() : true : type = Number (float out of range) : ' + x.valueOf();
                             return true;
                         }
                     }
@@ -513,13 +524,13 @@ function IsBad(x) {
             // EXTRA NUMBER OBJECT NaN CHECKER - when the Number object value is extracted, does it not equal itself when coerced, and therefore is NaN?
             if (Number(x) != Number(x)) {
                 // "==" type coercion would occur here. If parsing fails here likely would result in NaN which is never equal to anything. This fails on floats so avoid unless after float check logic. The Number Object might have other properties or values that trigger this, but unlikely. More of a fall back test.
-                isBadMessage = 'IsBad() : true : number coercion failed : ' + Number(x);
+                IsBadMessage = 'IsBad() : true : type = Number (number coercion failed) : ' + Number(x);
                 return true;
             }
 
             // Check if an Integer, then run calculation. If returns NaN the flag is bad.
             if (isNaN(parseInt(Number(x)))) {
-                isBadMessage = 'IsBad() : true : number integer conversion returns NaN : ' + x.valueOf();
+                IsBadMessage = 'IsBad() : true : type = Number.NaN (parseInt(Number(x)) check) : ' + x.valueOf();
                 return true;
             }
 
@@ -529,11 +540,11 @@ function IsBad(x) {
             // Min and Max Safe Integer selects the positive and negative max ranges for integers only. These translate to +9007199254740991 to -9007199254740991.
 
             if (Number(x) >= Number.MIN_SAFE_INTEGER && Number(x) <= Number.MAX_SAFE_INTEGER) {
-                isBadMessage = 'IsBad() : false : integer : ' + Number(x).valueOf();
+                IsBadMessage = 'IsBad() : false : type = Number (safe integer in range) : ' + Number(x).valueOf();
                 return false;
             } else {
                 // Note: This number is too big for a Numeric Integer but could still be valid as the new BigInt type. But because the caller did not type cast the value as such we cannot assume that expect a larger BigInt numeric range, so for now return value as bad. If you would like Numeric Object tests to still accept values in the +- MAX_VALUE known JavaScript memory range that includes BigInts, you can check that before called "true" using the BigInt logic shown elsewhere in this logic.
-                isBadMessage = 'IsBad() : true : integer out of range : ' + Number(x).valueOf();
+                IsBadMessage = 'IsBad() : true : type = Number (integer out of safe range) : ' + Number(x).valueOf();
                 return true;
             }
         }
@@ -541,7 +552,7 @@ function IsBad(x) {
 
         // BigInt Primitive Check
         // Note that BigInt has no object constructor nor can be a decimal. So we use the primitive check only. ES2020 introduced BigInt so not widely supported yet. Number Primitive and Number Object Constructor Check. Note: Any use of "BigInt()" conversion without checking if value is within +-Number.MAX_VALUE will blow up and say failed due to number be Infinity and not an integer! So ALWAYS use "IsBad()" to make sure number is in range before doing "BigInt(x)"!
-        if (typeof x === 'bigint') {
+        if (typeof x === 'bigint' || (BigInt && (x).constructor === BigInt)) {
 
             // BIGINT WILL NEVER RETURN "NaN"
             // AVOID NaN checkes with BigInt, as BigInt is NOT a Number type!
@@ -552,10 +563,10 @@ function IsBad(x) {
             // BigInts are a NEW type from ES2020
             // We know that BigInt numbers are not accurate but also that JavaScrpt has a number ceiling when they could flip to Infinity or fail. So below we flag large values approaching the max ceiling as bad numbers. For now we do not accept max storable bigints beyond safe max storage ranges, as they would fail and become infinity. To allow full JavaScript storage ranges for bigint checks, use Number.MAX_VALUE and Number.MIN_VALUE below. Note: BigInts cannot be decimal values so whole numbers are the floor. The BigInt empty function "BigInt()" without a number defaults to 0 like "Number()" so is valid. You cannot instantiate BigInt as a Constructor Function like new BigInt().
             if (BigInt(x) >= BigInt(-(Number.MAX_VALUE)) && BigInt(x) <= BigInt(Number.MAX_VALUE)) {
-                isBadMessage = 'IsBad() : false : bigint : ' + x.valueOf();
+                IsBadMessage = 'IsBad() : false : type = Bigint : ' + x.valueOf();
                 return false;
             } else {
-                isBadMessage = 'IsBad() : true : bigint out of range : ' + x.valueOf();
+                IsBadMessage = 'IsBad() : true : type = Bigint (out of range) : ' + x.valueOf();
                 return true;
             }
         }
@@ -566,26 +577,26 @@ function IsBad(x) {
 
             // If a bad or missing value comes in for a RegExp primitive, whether explicit or coerced, we flag the value as bad. Note: Empty "RegExp()" functions default to "/(?:)/" so valid like empty Number and Booleans. "(?:)" means non-capture group or do not capture anything, so safe. Note: We ONLY reject RegEx at this time if it returns a truly empty regex as "/(?:)/". Only empty RegEx or with undefined return the emopty regex query, which is bad.
             if (x.toString() === '/(?:)/') {
-                isBadMessage = 'IsBad() : true : bad regexp : ' + x;
+                IsBadMessage = 'IsBad() : true : type = RegExp (bad) : ' + x;
                 return true;
             } else {
-                isBadMessage = 'IsBad() : false : regexp : ' + x;
+                IsBadMessage = 'IsBad() : false : type = RegExp : ' + x;
                 return false;
             }
 
-        } else if (RegExp && (x instanceof RegExp || (Object.prototype.toString.call(x) === '[object RegExp]'))) {
+        } else if (RegExp && (x instanceof RegExp || (Object.prototype.toString.call(x) === '[object RegExp]') || (x).constructor === RegExp)) {
             // If a new RegExp() object is created with any properties assigned, do not flag it as "bad" or check for values below.
             for (const property1 in x) {
-                isBadMessage = 'IsBad() : false : regexp with properties : ' + x;
+                IsBadMessage = 'IsBad() : false : type = RegExp (with properties) : ' + x;
                 return false;
             }
 
             // Note: Empty "new RegExp()" objects default to "/(?:)/" so valid like empty Number and Booleans.
             if (RegExp(x).toString() === '/(?:)/') {
-                isBadMessage = 'IsBad() : true : bad regexp : ' + x;
+                IsBadMessage = 'IsBad() : true : type = RegExp (bad) : ' + x;
                 return true;
             } else {
-                isBadMessage = 'IsBad() : false : regexp : ' + x;
+                IsBadMessage = 'IsBad() : false : type = RegExp : ' + x;
                 return false;
             }
         }
@@ -595,7 +606,7 @@ function IsBad(x) {
             (typeof x === 'date')
             || (x.getMonth && (typeof x.getMonth === 'function'))
             || (x instanceof Date)
-            || (Date && (x instanceof Date || (Object.prototype.toString.call(x) === '[object Date]')))
+            || (Date && (x instanceof Date || (Object.prototype.toString.call(x) === '[object Date]') || (x).constructor === Date))
         ) {
 
             // Check for "bad dates" which returm "NaN" when new Date() is used. We want to reject these as "bad" values.
@@ -609,12 +620,12 @@ function IsBad(x) {
                 || x === Date(undefined)
                 || x === Date(null)
             ) {
-                isBadMessage = 'IsBad() : true : bad date : ' + x;
+                IsBadMessage = 'IsBad() : true : type = Date (bad) : ' + x;
                 return true;
             } else {
                 // We assume all dates that fail the above check as NOT empty of bad for now.
                 // No true date "format checking" has been added here, for now. But may be in the future.
-                isBadMessage = 'IsBad() : false : date : ' + x;
+                IsBadMessage = 'IsBad() : false : type = Date : ' + x;
                 return false;
             }
         }
@@ -626,22 +637,22 @@ function IsBad(x) {
             Function &&
             ((typeof x === 'function')
                 || (x instanceof Function)
-                || (Function && (x instanceof Function || (Object.prototype.toString.call(x) === '[object Function]'))))
+                || (Function && (x instanceof Function || (Object.prototype.toString.call(x) === '[object Function]') || (x).constructor === Function)))
         ) {
 
             if (String(x) === 'function () { }'
             ) {
-                isBadMessage = 'IsBad() : true : empty function : ' + x;
+                IsBadMessage = 'IsBad() : true : type = Function (empty) : ' + x;
                 return true;
             }
 
             // For now all functions but empty ones are not flagged as bad.
             if (x instanceof Function) {
-                isBadMessage = 'IsBad() : false : function : ' + x;
+                IsBadMessage = 'IsBad() : false : type = Function : ' + x;
                 return false;
             }
 
-            isBadMessage = 'IsBad() : false : function : ' + x;
+            IsBadMessage = 'IsBad() : false : type = Function : ' + x;
             return false;
 
         }
@@ -650,12 +661,18 @@ function IsBad(x) {
         // OBJECT FILTER : Object Catchall
         // This catches any true "Object" created using either "new" keyword (new Number) or New Object, or "{}". These all have object properties (not just prototype object properties). If these Object properties are missing or empty, the logic below should catch it. Keep in mind most wrapped or boxed primitives like "new Number()" create a boxed object around a default value like 0, new DateTime, etc. But see rules below of what I consider "bad" values. "new Date()" creates an object but with valid DateTime equal to Now. Symbol always creates a valid unique identifier. So Date and Symbol always pass test below and would NOT be empty or bad by default unless reassigned bad values.
 
-        if (
-            Object &&
+        // BETTER WAY TO CHECK FOR ANY TYPE IN JAVASCRIPT
+        // All Types in JavaScript can be checked using constructors as follows:
+        // let x = {};
+        // (typeof x !== 'undefined' && (x).constructor === Object);// true
+
+        if (Object &&
             ((typeof x === 'object')
                 || (x instanceof Object)
-                || (Object && (x instanceof Object || (Object.prototype.toString.call(x) === '[object Object]'))))
-        ) {
+                || (Object &&
+                (x instanceof Object || (Object.prototype.toString.call(x) === '[object Object]') || (x).constructor === Object)
+            ))
+           ) {
 
             // Next two logic checks flag any custom created objects as having any keys or properties as valid and not bad or empty. Note: Both logic checks below will NOT catch the following:
             // - new Date() - because this generates a fully qualified date equal to Now, not considered a bad value or empty. So ignored.
@@ -665,7 +682,7 @@ function IsBad(x) {
             // Note: For now we allow EMPTY OBJECT to come in that have a key or property assigned to undefined, NaN, or null as there may be an explicit reason for a developer to create such an object versus an empty one. If we want to enforce, say {undefined} as empty, we would need to check for such a property or key in new logic below.
             if ((Object.keys && (typeof Object.keys(x)) && (typeof Object.keys(x).length === 'number') && Object.keys(x).length === 0)
             ) {
-                isBadMessage = 'IsBad() : true : empty object without keys : ' + x;
+                IsBadMessage = 'IsBad() : true : type = Object (empty without keys) : ' + x;
                 return true;
             }
 
@@ -673,11 +690,11 @@ function IsBad(x) {
             // Warning: This matches Date Objects too so gives false empty object, but above logic filters date types out. "getOwnPropertyNames" - detection works on non-prototype properties of the object versus "for (const property1 in x){...}" which does not and would give false positives on some objects.
             if (Object.getOwnPropertyNames && (typeof Object.getOwnPropertyNames(x)) && (typeof Object.getOwnPropertyNames(x).length === 'number') && (Object.getOwnPropertyNames(x).length === 0)
             ) {
-                isBadMessage = 'IsBad() : true : empty object without properties : ' + x;
+                IsBadMessage = 'IsBad() : true : type = Object (empty without properties) : ' + x;
                 return true;
             }
 
-            isBadMessage = 'IsBad() : false : object : ' + x;
+            IsBadMessage = 'IsBad() : false : type = Object : ' + x;
             return false;
 
         }
@@ -686,12 +703,12 @@ function IsBad(x) {
         // GENERIC OBJECTS WITH ANY PROPERTIES FILTER: Objects with one or more properties are caught here and flagged as NOT empty. This logic checks prototype as well as object properties, so could give false positives. This logic below only catches Non-Objects assigned primitive values, true Objects with one or more valid properties, and non-empty strings. Flags them as NOT empty early before object tests below.
         // WARNING: Empty new Objects ("{}" or "new Object()"), or wrapped-boxed objects around primitive using "new" for Numbers, Dates, Booleans, and Symbols are skipped over by this logic below so not caught as being NOT empty! Logic below REMOVES any object that has has one or more properties (object or prototype).
         for (const property1 in x) {
-            isBadMessage = 'IsBad() : false : valid property : ' + x;
+            IsBadMessage = 'IsBad() : false : type = Unknown (with properties) : ' + x;
             return false;
         }
 
         // Catchall returns NOT empty or bad, by default. Never return undefined either!
-        isBadMessage = 'IsBad() : false : valid value : ' + x;
+        IsBadMessage = 'IsBad() : false : type = Unknown (with value) : ' + x;
         return false;
 
     } catch (e) {
@@ -706,7 +723,7 @@ function IsBad(x) {
         }
 
         // Catchall returns NOT empty or bad by default. Never return undefined!
-        isBadMessage = 'IsBad() : error : ' + x + ' : ' + e;
+        IsBadMessage = 'IsBad() : error : ' + x + ' : ' + e;
         return false;
 
     }
@@ -731,8 +748,8 @@ var IsBadTester = {
             try {
 
                 // Print result in Developer Tools (F12) console section in the web browser.
-                // Optional: Can also print out IsBad() message "isBadMessage" at the end for more details of what value went bad in what section of the function and why.
-                console.log('IsBadTester() : ' + IsBad(data[i].test) + ' : ' + data[i].name + ' : ' + isBadMessage);
+                // Optional: Can also print out IsBad() message "IsBadMessage" at the end for more details of what value went bad in what section of the function and why.
+                console.log('IsBadTester() : ' + IsBad(data[i].test) + ' : ' + data[i].name + ' : ' + IsBadMessage);
                 //console.log('IsBadTester() : '+IsBad(data[i].test)+' : '+data[i].name);
 
             } catch (e) {
@@ -1008,7 +1025,7 @@ var IsBadTester = {
 //IsBadTester.start();
 
 // HOW TO CALL THE PLAIN ISBAD(x) TEST
-//console.log('Test: ' + IsBad(1.0e+16) + ' : ' + isBadMessage);
+//console.log('Test: ' + IsBad(1.0e+16) + ' : ' + IsBadMessage);
 
 // RUN JAVASCRIPT "BAD" DATA TEST with DEFAULTS
 // Test "IfBad(x,d)" with defaults to see if it returns default values when argument is a "bad" value:
