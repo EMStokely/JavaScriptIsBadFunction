@@ -43,9 +43,14 @@ License: GNU GENERAL PUBLIC LICENSE VERSION 3
 
 // "IfBad()" is an overload for "IsBad()" and returns either the original "x" parameter entered, or a default "d" value of the developers choice if a bad or empty value is detected. This powerful version allows you to embed this function into expressions in JavaScript and keep processing values rather than stop and do conditional checks!
 
-function IfBad(x, d) {
+// x = value to test
+// t = type of value expected ("number", "string", etc)
+// d = default value returned if value is bad
+
+
+function IfBad(x,t,d) {
     'use strict';
-    if (IsBad(x)) {
+    if (IsBad(x,t)) {
         return d;// return a default value if bad
     } else {
         return x;// return original value if good
@@ -57,8 +62,11 @@ function IfBad(x, d) {
 // "IsBad()" returns true-false boolean
 // Optional: You canm also assign this function to the prototype, if needed as a property of all prototypes using the following: "Object.prototype.IsBad = function (x){}"
 
+// x = value to test
+// t = type of value expected ("number", "string", etc) <<< THIS IS OPTIONAL!
+
 var IsBadMessage = '';
-function IsBad(x) {
+function IsBad(x,t) {
 
     'use strict';
 
@@ -66,25 +74,32 @@ function IsBad(x) {
 
     try {
 
+        // Check "type" if caller has entered a type argument.
+        let type = 0;
+        let types = ["none","number", "bigint", "string", "boolean", "date", "array", "regex", "function", "symbol", "object"];
+        if (t) {
+            type = types.indexOf(t.toString().toLowerCase());
+        }
+
         // Undefined Check
         // This catches two undefined scenarios, if a variable has been defined/declared or declared but not initialized or assigned a value:
         // 1. The first check catches a variable that does NOT exist (undefined/undeclared) that has a type of 'undefined', or a declared variable that is not initialized/assigned to a value yet (assigned to the undefined primitive).
         // 2. The second check catches the latter part of the logic above, a declared variable that is not initialized/assigned to a value yet (assigned to the undefined primitive).
         if (typeof x === 'undefined' || x === undefined) {
-            IsBadMessage = 'IsBad() : true : type = undefined';
+            IsBadMessage = 'IsBad() : result=true : type=undefined : undefined';
             return true;
         }
 
         // Null Check
         // Note: This does not coerce a null from a variable like '==' would do, just checks for the explicit value.
         if (x === null) {
-            IsBadMessage = 'IsBad() : true : type = Object (null)';
+            IsBadMessage = 'IsBad() : result=true : type=Object (null) : null';
             return true;
         }
 
         // ALERT: Catch All Symbol Checks here as they are always unique and never bad data! Symbols can not be empty and dont have constructors so cannot be created using "new Symbol()".
-        if (typeof x === 'symbol') {
-            IsBadMessage = 'IsBad() : false : type = Symbol';
+        if ((type === 0 || type === 9) && typeof x === 'symbol') {
+            IsBadMessage = 'IsBad() : result=false : type=Symbol : Symbol';
             return false;
         }
 
@@ -184,29 +199,6 @@ function IsBad(x) {
         //}
 
 
-        // This logic below checks for the raw "window.NaN" explicit value assigned to the variable without number coercion!
-        // Note: We avoid using "isNaN" vs "Number.IsNaN" as the former would coerce all values to Number types and valid values like strings or objects would fail conversion. The check below ONLY looks for the value of NaN (window.NaN) explicitly set to the variable!
-        if ((x !== x) || (Number.isNaN(x))) {
-            IsBadMessage = 'IsBad() : true : type = Number.NaN';
-            return true;
-        }
-
-
-
-
-
-        // Infinity Check : Force empty response.
-        if (x === Infinity
-            || x === +Infinity
-            || x === -Infinity
-            || (Number.POSITIVE_INFINITY && x === Number.POSITIVE_INFINITY)
-            || (Number.NEGATIVE_INFINITY && x === Number.NEGATIVE_INFINITY)) {
-            IsBadMessage = 'IsBad() : true : type = Number.Infinity : ' + x;
-            return true;
-        }
-
-
-
         // BETTER WAY TO CHECK FOR ANY TYPE IN JAVASCRIPT WAS ADDED BELOW!
         // All Types in JavaScript can be checked using 'constructor' as follows:
         // let x = 12345;
@@ -214,11 +206,10 @@ function IsBad(x) {
         // ALERT: 'constructor' type checks are confirmed on both the primitice and "new" object versions!
 
 
-
-
         // Array and Array Constructor Check : Since all array are objects, we check array before object test below. Arrays, unlike Number, String, etc. does NOT have a Array "typeof" primitive type, as it is an object.
 
-        if (Array &&
+        if ((type === 0 || type === 6) && 
+            Array &&
             (x instanceof Array
                 || (Object.prototype.toString.call(x) === '[object Array]')
                 || Array.isArray(x)
@@ -226,18 +217,25 @@ function IsBad(x) {
             && (typeof x.length === 'number')
         ) {
             if (x.length === 0) {
-                IsBadMessage = 'IsBad() : true : type = Array (empty) : ' + x;
+                IsBadMessage = 'IsBad() : result=true : type=Array (empty) : ' + x;
                 return true;
             } else {
-                IsBadMessage = 'IsBad() : false : type = Array : ' + x;
-                return false;
+                // Check array for bad values. If one appears, report the array as problematic.
+                if (x.indexOf(null) >= 0 || x.indexOf(undefined) >= 0 || x.indexOf(NaN) >= 0) {
+                    IsBadMessage = 'IsBad() : result=true : type=Array (has bad values) : ' + x;
+                    return true;
+                } else {
+                    IsBadMessage = 'IsBad() : result=false : type=Array : ' + x;
+                    return false;
+                }
             }
         }
 
 
         // String Primitive and String Object Constructor Check
-        if ((typeof x === 'string')
-            || (String && (x instanceof String || (Object.prototype.toString.call(x) === '[object String]') ||  (x).constructor === String))) {
+        if ((type === 0 || type === 3) && 
+            ((typeof x === 'string')
+            || (String && (x instanceof String || (Object.prototype.toString.call(x) === '[object String]') ||  (x).constructor === String)))) {
             // Note: "new String()" creates an empty string "" so is a bad value in this function, unlike new Number and new Boolean values.
 
             // We can convert both string primitive and string objects to a string to test if empty.
@@ -252,10 +250,10 @@ function IsBad(x) {
                 testString = testString.replace(/[\t\n\r]/gm, '');
             }
             if (testString === '') {
-                IsBadMessage = 'IsBad() : true : type = String (empty) : ' + x;
+                IsBadMessage = 'IsBad() : result=true : type=String (empty) : ' + x;
                 return true;
             } else {
-                IsBadMessage = 'IsBad() : false : type = String : ' + x;
+                IsBadMessage = 'IsBad() : result=false : type=String : ' + x;
                 return false;
             }
 
@@ -276,30 +274,31 @@ function IsBad(x) {
 
         // Boolean Primitive and Boolean Object Constructor Check
         // ALERT: For now all booleans are flagged as non-bad as even bad values get coerced to true-false!
-        if (typeof x === 'boolean') {
+        if ((type === 0 || type === 4) && (typeof x === 'boolean')) {
 
             // If a bad or missing value comes in for a Boolean primitive, whether explicit or coerced, we flag the value as bad.
             if (x === true || x === false) {
-                IsBadMessage = 'IsBad() : false : type = Boolean : ' + x;
+                IsBadMessage = 'IsBad() : result=false : type=Boolean : ' + x;
                 return false;
             } else {
-                IsBadMessage = 'IsBad() : true : type = Boolean (bad) : ' + x;
+                IsBadMessage = 'IsBad() : result=true : type=Boolean (bad) : ' + x;
                 return true;
             }
 
-        } else if (Boolean && (x instanceof Boolean || (Object.prototype.toString.call(x) === '[object Boolean]') || (x).constructor === Boolean)) {
+        } else if ((type === 0 || type === 4) &&
+            (Boolean && (x instanceof Boolean || (Object.prototype.toString.call(x) === '[object Boolean]') || (x).constructor === Boolean))) {
             // If a new Boolean() object is created with any properties assigned, do not flag it as "bad" or check for values below.
             for (const property1 in x) {
-                IsBadMessage = 'IsBad() : false : type = Boolean (with properties) : ' + x;
+                IsBadMessage = 'IsBad() : result=false : type=Boolean (with properties) : ' + x;
                 return false;
             }
 
             // We type cast the Boolean, which in most cases when created using "new Boolean()" will return at least a false. Note: We cannot check if it stores a value but in most cases, like Number creating 0 or String creating "", Boolean will create false.
             if (Boolean(x) === true || Boolean(x) === false) {
-                IsBadMessage = 'IsBad() : false : type = Boolean : ' + x;
+                IsBadMessage = 'IsBad() : result=false : type=Boolean : ' + x;
                 return false;
             } else {
-                IsBadMessage = 'IsBad() : true : type = Boolean (bad) : ' + x;
+                IsBadMessage = 'IsBad() : result=true : type=Boolean (bad) : ' + x;
                 return true;
             }
         }
@@ -334,7 +333,29 @@ function IsBad(x) {
         // isNaN('hello world');// true - CONVERTS VALUE TO NUMBER AND IF "NaN" IS RETURNED
         // Number.isNaN('hello world');// false - CHECKS ONLY FOR "NaN" VALUE NOT IF VALUE IS NUMERIC!
 
-        if (typeof x === 'number') {
+
+
+
+
+        // This logic below checks for the raw "window.NaN" explicit value assigned to the variable without number coercion!
+        // Note: We avoid using "isNaN" vs "Number.IsNaN" as the former would coerce all values to Number types and valid values like strings or objects would fail conversion. The check below ONLY looks for the value of NaN (window.NaN) explicitly set to the variable!
+        if ((type === 0 || type === 1) && ((x !== x) || (Number.isNaN(x)))) {
+            IsBadMessage = 'IsBad() : result=true : type=Number.NaN : NaN';
+            return true;
+        }
+
+        // Infinity Check : Force empty response.
+        if ((type === 0 || type === 1) && 
+            (x === Infinity
+            || x === +Infinity
+            || x === -Infinity
+            || (Number.POSITIVE_INFINITY && x === Number.POSITIVE_INFINITY)
+            || (Number.NEGATIVE_INFINITY && x === Number.NEGATIVE_INFINITY))) {
+            IsBadMessage = 'IsBad() : result=true : type=Number.Infinity : ' + x;
+            return true;
+        }
+
+        if ((type === 0 || type === 1) && (typeof x === 'number')) {
 
             // NaN MATH CALCULATION TEST : Will this number value generate a NaN or error when doing basic math? If so, that could be a clue that this is NOT a safe number to use! Number Found but test a few scenarios to make sure it generates no errors.
             // NaN could get created in certain calculations below. So we run a math test that might return a NaN using various values below.
@@ -345,7 +366,7 @@ function IsBad(x) {
 
             // Logic below should RARELY catch anything since typeof 'number' here would stop ann primitive literals other than numbers. That is different for its use below for new Number() object constructor values.
             if (Number.isNaN(x * 1) || isNaN(x)) {
-                IsBadMessage = 'IsBad() : true : type = Number.NaN (x * 1 check) : ' + x.valueOf();
+                IsBadMessage = 'IsBad() : result=true : type=Number.NaN (x * 1 check) : ' + x.valueOf();
                 return true;
             }
 
@@ -353,7 +374,7 @@ function IsBad(x) {
             // Use this to filter out any last minute non-numeric values, which should be rare based on the "typeof" Number check above!
             // Note that parseInt() is not a good way to check numeric values as parseFloat which catch some bugs.
             if (isNaN(parseFloat(x))) {
-                IsBadMessage = 'IsBad() : true : type = Number.NaN (parseFloat(x) check) : ' + x.valueOf();
+                IsBadMessage = 'IsBad() : result=true : type=Number.NaN (parseFloat(x) check) : ' + x.valueOf();
                 return true;
             }
 
@@ -410,15 +431,15 @@ function IsBad(x) {
                         // Settings below support 100% accuracy floats to 9 digits. Change this range as needed! Use MIN and MAX values if you want unlimited float number ranges but with decreesing accuracy in decimals as your number gets larger and smaller. "8388608" is the max integer range to allow guaranteed 9-decimal accurate float values!
                         //if (x >= Number.MIN_VALUE && x <= Number.MAX_VALUE) {
                         if (Number && x >= 1e-10 && x <= 8388608) {
-                            IsBadMessage = 'IsBad() : false : type = Number (positive float) : ' + x.valueOf();
+                            IsBadMessage = 'IsBad() : result=false : type=Number (positive float) : ' + x.valueOf();
                             return false;
                             // Settings below support 100% accuracy floats to 9 digits. Change this range as needed! Use MIN and MAX values if you want unlimited float number ranges but with decreesing accuracy in decimals as your number gets larger and smaller.
                         //} else if (x <= -(Number.MIN_VALUE) && x >= -(Number.MAX_VALUE)) {
                         } else if (Number && x <= -(1e-10) && x >= -(8388608)) {
-                            IsBadMessage = 'IsBad() : false : type = Number (negative float) : ' + x.valueOf();
+                            IsBadMessage = 'IsBad() : result=false : type=Number (negative float) : ' + x.valueOf();
                             return false;
                         } else {
-                            IsBadMessage = 'IsBad() : true : type = Number (float out of accuracy range) : ' + x.valueOf();
+                            IsBadMessage = 'IsBad() : result=true : type=Number (float out of accuracy range) : ' + x.valueOf();
                             return true;
                         }
                     }
@@ -428,7 +449,7 @@ function IsBad(x) {
 
             // Check if an Integer, then run calculation. If returns NaN the flag is bad.
             if (isNaN(parseInt(x))) {
-                IsBadMessage = 'IsBad() : true : type = Number.NaN (parseInt(x) check) : ' + x.valueOf();
+                IsBadMessage = 'IsBad() : result=true : type=Number.NaN (parseInt(x) check) : ' + x.valueOf();
                 return true;
             }
 
@@ -436,10 +457,10 @@ function IsBad(x) {
             // Min and Max Safe Integer selects the positive and negative max ranges for integers only. These translate to +9007199254740991 to -9007199254740991.
 
             if (Number && x >= Number.MIN_SAFE_INTEGER && x <= Number.MAX_SAFE_INTEGER) {
-                IsBadMessage = 'IsBad() : false : type = Number (safe integer in range) : ' + x.valueOf();
+                IsBadMessage = 'IsBad() : result=false : type=Number (safe integer in range) : ' + x.valueOf();
                 return false;
             } else {
-                IsBadMessage = 'IsBad() : true : type = Number (integer out of safe range) : ' + x.valueOf();
+                IsBadMessage = 'IsBad() : result=true : type=Number (integer out of safe range) : ' + x.valueOf();
                 return true;
             }
         }
@@ -448,11 +469,12 @@ function IsBad(x) {
 
 
         // Number Object Constructor Check
-        if (Number && (x instanceof Number || (Object.prototype.toString.call(x) === '[object Number]') || (x).constructor === Number)) {
+        if ((type === 0 || type === 1) &&
+            (Number && (x instanceof Number || (Object.prototype.toString.call(x) === '[object Number]') || (x).constructor === Number))) {
 
             // First check if the new Number Object has any assigned properties. If so, its a valid value and should not be flagged as bad.
             for (const property1 in x) {
-                IsBadMessage = 'IsBad() : false : type = Number (with properties) : ' + x.valueOf();
+                IsBadMessage = 'IsBad() : result=false : type=Number (with properties) : ' + x.valueOf();
                 return false;
             }
 
@@ -462,12 +484,12 @@ function IsBad(x) {
             // ALERT: Do NOT do an equality test below (x !== x) for comparing equality of any floating point values with decimals that are coereced or calculated as they are notoriously inaccurate and would likely fail this equality check. If NaN is checked here, test below here would always fail for them!
 
             if (Number.isNaN(Number(x) * 1) || isNaN(Number(x))) {
-                IsBadMessage = 'IsBad() : true : type = Number.NaN (Number(x) * 1 check) : ' + x.valueOf();
+                IsBadMessage = 'IsBad() : result=true : type=Number.NaN (Number(x) * 1 check) : ' + x.valueOf();
                 return true;
             }
 
             if (isNaN(parseFloat(Number(x)))) {
-                IsBadMessage = 'IsBad() : true : type = Number.NaN (parseFloat(x) check) : ' + x.valueOf();
+                IsBadMessage = 'IsBad() : result=true : type=Number.NaN (parseFloat(x) check) : ' + x.valueOf();
                 return true;
             }
 
@@ -505,15 +527,15 @@ function IsBad(x) {
                         // Settings below support 100% accuracy floats to 9 digits. Change this range as needed! Use MIN and MAX values if you want unlimited float number ranges but with decreesing accuracy in decimals as your number gets larger and smaller.
                         //if (x >= Number.MIN_VALUE && x <= Number.MAX_VALUE) {
                         if (x >= 1e-10 && x <= 8388608) {
-                            IsBadMessage = 'IsBad() : false : type = Number (positive float) : ' + x.valueOf();
+                            IsBadMessage = 'IsBad() : result=false : type=Number (positive float) : ' + x.valueOf();
                             return false;
                         // Settings below support 100% accuracy floats to 9 digits. Change this range as needed! Use MIN and MAX values if you want unlimited float number ranges but with decreesing accuracy in decimals as your number gets larger and smaller.
                         //} else if (x <= -(Number.MIN_VALUE) && x >= -(Number.MAX_VALUE)) {
                         } else if (x <= -(1e-10) && x >= -(8388608)) {
-                            IsBadMessage = 'IsBad() : false : type = Number (negative float) : ' + x.valueOf();
+                            IsBadMessage = 'IsBad() : result=false : type=Number (negative float) : ' + x.valueOf();
                             return false;
                         } else {
-                            IsBadMessage = 'IsBad() : true : type = Number (float out of range) : ' + x.valueOf();
+                            IsBadMessage = 'IsBad() : result=true : type=Number (float out of range) : ' + x.valueOf();
                             return true;
                         }
                     }
@@ -524,13 +546,13 @@ function IsBad(x) {
             // EXTRA NUMBER OBJECT NaN CHECKER - when the Number object value is extracted, does it not equal itself when coerced, and therefore is NaN?
             if (Number(x) != Number(x)) {
                 // "==" type coercion would occur here. If parsing fails here likely would result in NaN which is never equal to anything. This fails on floats so avoid unless after float check logic. The Number Object might have other properties or values that trigger this, but unlikely. More of a fall back test.
-                IsBadMessage = 'IsBad() : true : type = Number (number coercion failed) : ' + Number(x);
+                IsBadMessage = 'IsBad() : result=true : type=Number (number coercion failed) : ' + Number(x);
                 return true;
             }
 
             // Check if an Integer, then run calculation. If returns NaN the flag is bad.
             if (isNaN(parseInt(Number(x)))) {
-                IsBadMessage = 'IsBad() : true : type = Number.NaN (parseInt(Number(x)) check) : ' + x.valueOf();
+                IsBadMessage = 'IsBad() : result=true : type=Number.NaN (parseInt(Number(x)) check) : ' + x.valueOf();
                 return true;
             }
 
@@ -540,19 +562,22 @@ function IsBad(x) {
             // Min and Max Safe Integer selects the positive and negative max ranges for integers only. These translate to +9007199254740991 to -9007199254740991.
 
             if (Number(x) >= Number.MIN_SAFE_INTEGER && Number(x) <= Number.MAX_SAFE_INTEGER) {
-                IsBadMessage = 'IsBad() : false : type = Number (safe integer in range) : ' + Number(x).valueOf();
+                IsBadMessage = 'IsBad() : result=false : type=Number (safe integer in range) : ' + Number(x).valueOf();
                 return false;
             } else {
                 // Note: This number is too big for a Numeric Integer but could still be valid as the new BigInt type. But because the caller did not type cast the value as such we cannot assume that expect a larger BigInt numeric range, so for now return value as bad. If you would like Numeric Object tests to still accept values in the +- MAX_VALUE known JavaScript memory range that includes BigInts, you can check that before called "true" using the BigInt logic shown elsewhere in this logic.
-                IsBadMessage = 'IsBad() : true : type = Number (integer out of safe range) : ' + Number(x).valueOf();
+                IsBadMessage = 'IsBad() : result=true : type=Number (integer out of safe range) : ' + Number(x).valueOf();
                 return true;
             }
         }
 
 
         // BigInt Primitive Check
-        // Note that BigInt has no object constructor nor can be a decimal. So we use the primitive check only. ES2020 introduced BigInt so not widely supported yet. Number Primitive and Number Object Constructor Check. Note: Any use of "BigInt()" conversion without checking if value is within +-Number.MAX_VALUE will blow up and say failed due to number be Infinity and not an integer! So ALWAYS use "IsBad()" to make sure number is in range before doing "BigInt(x)"!
-        if (typeof x === 'bigint' || (BigInt && (x).constructor === BigInt)) {
+        // Note that BigInt has no object constructor nor can be a decimal. So we use the primitive check only. ES2020 introduced BigInt so not widely supported yet. Number Primitive and Number Object Constructor Check. Note: Any use of "BigInt()" conversion without checking if value is within +-Number.MAX_VALUE will blow up and say failed due to number be Infinity and not an integer! So ALWAYS use "IsBad()" to make sure number is in range before doing "BigInt(x)".
+
+        // UPDATE: Added "Number" type for catching BigInt as scientific notation (1.79e+308) comes in as a "Number" type before its coerced as BigInt(x) below. Note that BigInt does not accept decimal values, like -5E-324. However, when JavaScript reaches its memory limit (-5E-325) its converted to 0. That occurs when the number exceeds double precison floating value ranges (too tiny a number for memory). So, that will pass as a BigInt.
+
+        if ((type === 0 || type === 2) && (typeof x === 'bigint' || (BigInt && (x).constructor === BigInt) || (typeof x === 'number' && x.toString().toLowerCase().indexOf("e-") === -1))) {
 
             // BIGINT WILL NEVER RETURN "NaN"
             // AVOID NaN checkes with BigInt, as BigInt is NOT a Number type!
@@ -563,96 +588,112 @@ function IsBad(x) {
             // BigInts are a NEW type from ES2020
             // We know that BigInt numbers are not accurate but also that JavaScrpt has a number ceiling when they could flip to Infinity or fail. So below we flag large values approaching the max ceiling as bad numbers. For now we do not accept max storable bigints beyond safe max storage ranges, as they would fail and become infinity. To allow full JavaScript storage ranges for bigint checks, use Number.MAX_VALUE and Number.MIN_VALUE below. Note: BigInts cannot be decimal values so whole numbers are the floor. The BigInt empty function "BigInt()" without a number defaults to 0 like "Number()" so is valid. You cannot instantiate BigInt as a Constructor Function like new BigInt().
             if (BigInt(x) >= BigInt(-(Number.MAX_VALUE)) && BigInt(x) <= BigInt(Number.MAX_VALUE)) {
-                IsBadMessage = 'IsBad() : false : type = Bigint : ' + x.valueOf();
+                IsBadMessage = 'IsBad() : result=false : type=Bigint : ' + x.valueOf();
                 return false;
             } else {
-                IsBadMessage = 'IsBad() : true : type = Bigint (out of range) : ' + x.valueOf();
+                IsBadMessage = 'IsBad() : result=true : type=Bigint (out of range) : ' + x.valueOf();
                 return true;
             }
         }
 
 
         // RegExp Primitive and RegExp Object Constructor Check
-        if (typeof x === 'regexp') {
+        if ((type === 0 || type === 7) && (typeof x === 'regexp')) {
 
             // If a bad or missing value comes in for a RegExp primitive, whether explicit or coerced, we flag the value as bad. Note: Empty "RegExp()" functions default to "/(?:)/" so valid like empty Number and Booleans. "(?:)" means non-capture group or do not capture anything, so safe. Note: We ONLY reject RegEx at this time if it returns a truly empty regex as "/(?:)/". Only empty RegEx or with undefined return the emopty regex query, which is bad.
             if (x.toString() === '/(?:)/') {
-                IsBadMessage = 'IsBad() : true : type = RegExp (bad) : ' + x;
+                IsBadMessage = 'IsBad() : result=true : type=RegExp (bad) : ' + x;
                 return true;
             } else {
-                IsBadMessage = 'IsBad() : false : type = RegExp : ' + x;
+                IsBadMessage = 'IsBad() : result=false : type=RegExp : ' + x;
                 return false;
             }
 
-        } else if (RegExp && (x instanceof RegExp || (Object.prototype.toString.call(x) === '[object RegExp]') || (x).constructor === RegExp)) {
+        } else if ((type === 0 || type === 7) &&
+            (RegExp && (x instanceof RegExp || (Object.prototype.toString.call(x) === '[object RegExp]') || (x).constructor === RegExp))) {
             // If a new RegExp() object is created with any properties assigned, do not flag it as "bad" or check for values below.
             for (const property1 in x) {
-                IsBadMessage = 'IsBad() : false : type = RegExp (with properties) : ' + x;
+                IsBadMessage = 'IsBad() : result=false : type=RegExp (with properties) : ' + x;
                 return false;
             }
 
             // Note: Empty "new RegExp()" objects default to "/(?:)/" so valid like empty Number and Booleans.
             if (RegExp(x).toString() === '/(?:)/') {
-                IsBadMessage = 'IsBad() : true : type = RegExp (bad) : ' + x;
+                IsBadMessage = 'IsBad() : result=true : type=RegExp (bad) : ' + x;
                 return true;
             } else {
-                IsBadMessage = 'IsBad() : false : type = RegExp : ' + x;
+                IsBadMessage = 'IsBad() : result=false : type=RegExp : ' + x;
                 return false;
             }
         }
 
         // DATE FILTER: This catches Date objects which might include wrapped dates (new Date()), empty dates, or corrupt dates. Because Dates are flagged as not having properties in #3 filter below, they would have been flagged as Empty. This catches those cases. Note: I am using a fallback catch for date in case one fails.
-        if (
-            (typeof x === 'date')
-            || (x.getMonth && (typeof x.getMonth === 'function'))
-            || (x instanceof Date)
-            || (Date && (x instanceof Date || (Object.prototype.toString.call(x) === '[object Date]') || (x).constructor === Date))
-        ) {
+        // WARNING: The Date checker below will generally accept most values if the object coming in is a treu Date Object using "new Date(x)". This means it will allow bad values for "x" to create unpredictable dates. So it would fail to generate the expected date for say "new Date(1/1/2000)", which defaults to Midnight on Dec 31, 1969. Also, when a non-date object is submitted, like without "new" as "Date(x)", almost all those would be rejected as that function defaults almost all dates to the current date-time, which is wrong.
+        // So use the date checked carefully and plan to always use "new Date(x)" and a standard date-friendly value for "x" as a number, or "2000,2,1" etc which readily convert to accurate historical dates.
+        if (type === 0 || type === 5) {
+            if (((typeof x === 'date')// check true date objects first
+                || (x.getMonth && (typeof x.getMonth === 'function'))
+                || (x instanceof Date)
+                || (Date && (x instanceof Date || (Object.prototype.toString.call(x) === '[object Date]') || (x).constructor === Date)))) {
 
-            // Check for "bad dates" which returm "NaN" when new Date() is used. We want to reject these as "bad" values.
-            if ((isNaN && isNaN(x))
-                || x.toString() === 'Invalid Date'
-                || x.toString() == (new Date(null)).toString()
-                || x === NaN
-                || x === undefined
-                || x === null
-                || x === Date(NaN)
-                || x === Date(undefined)
-                || x === Date(null)
-            ) {
-                IsBadMessage = 'IsBad() : true : type = Date (bad) : ' + x;
-                return true;
+                if (x.toString() === 'Invalid Date'
+                    || Number.isNaN(x)
+                    || x === undefined
+                    || x === null
+                    || x === new Date(NaN)
+                    || x === new Date(undefined)
+                    || x.toISOString() === new Date(0).toISOString()// This compares date-time to the millisecond. If the value date-time is the same as the default start date in JavaScript, or 12/31/1969 at midnight, distrust it. We have to reject these dates for now, as any bad numbers or strings default "new Date()" to that default date when they fail. If you app explicitly uses 12/31/1969 then modify this code and use other means to catch bad values that default Date() Objects to this hard date-time.
+                ) {
+                    IsBadMessage = 'IsBad() : result=true : type=Date (unreliable date conversion 1) : ' + (new Date(x)).toString();
+                    return true;
+                } else {
+                    // We assume all dates that fail the above check as NOT empty of bad for now.
+                    // No true date "format checking" has been added here, for now. But may be in the future.
+                    IsBadMessage = 'IsBad() : result=false : type=Date : ' + (new Date(x)).toString();
+                    return false;
+                }
             } else {
-                // We assume all dates that fail the above check as NOT empty of bad for now.
-                // No true date "format checking" has been added here, for now. But may be in the future.
-                IsBadMessage = 'IsBad() : false : type = Date : ' + x;
-                return false;
+                if (Number.isNaN(x)
+                    || x === undefined
+                    || x === null
+                    || x.toString().replace(/\s/g,'') === ''
+                    || (new Date(x)).toString() === 'Invalid Date'
+                    // Reject any random string or number that creates the current date-time as its likely that is not what the caller expects! Unless the user creates a real "new" Date() object above, distrust and reject "Date()", "Date(x)", and all other forms to avoid the risk of returning just the current default date-time returned from a random value.
+                    || x.toString() === (new Date()).toString()
+                    || ((Date(x)).toString() === (new Date()).toString() && (new Date(x)).toString() === (new Date()).toString())
+                ) {
+                    IsBadMessage = 'IsBad() : result=true : type=Date (unreliable date conversion 2) : ' + (new Date(x)).toString();
+                    return true;
+                } else {
+                    IsBadMessage = 'IsBad() : result=false : type=Date (conversion ok) : ' + (new Date(x)).toString();
+                    return false;
+                }
             }
         }
 
 
 
         // FUNCTION FILTER
-        if (
-            Function &&
+        if ((type === 0 || type === 8) && 
+            (Function &&
             ((typeof x === 'function')
                 || (x instanceof Function)
-                || (Function && (x instanceof Function || (Object.prototype.toString.call(x) === '[object Function]') || (x).constructor === Function)))
-        ) {
+                || (Function && (x instanceof Function || (Object.prototype.toString.call(x) === '[object Function]') || (x).constructor === Function))))) {
 
-            if (String(x) === 'function () { }'
-            ) {
-                IsBadMessage = 'IsBad() : true : type = Function (empty) : ' + x;
+            // Test if the function is empty or has bad values.
+            let func = String(x).toLowerCase().replace(/\s/g, '');
+            if (func === 'function(){}') {
+                IsBadMessage = 'IsBad() : result=true : type=Function (empty) : ' + x;
                 return true;
             }
 
             // For now all functions but empty ones are not flagged as bad.
             if (x instanceof Function) {
-                IsBadMessage = 'IsBad() : false : type = Function : ' + x;
+                IsBadMessage = 'IsBad() : result=false : type=Function : ' + x;
                 return false;
             }
 
-            IsBadMessage = 'IsBad() : false : type = Function : ' + x;
+            IsBadMessage = 'IsBad() : result=false : type=Function : ' + x;
             return false;
 
         }
@@ -666,13 +707,13 @@ function IsBad(x) {
         // let x = {};
         // (typeof x !== 'undefined' && (x).constructor === Object);// true
 
-        if (Object &&
+        if ((type === 0 || type === 10) && 
+            (Object &&
             ((typeof x === 'object')
                 || (x instanceof Object)
                 || (Object &&
                 (x instanceof Object || (Object.prototype.toString.call(x) === '[object Object]') || (x).constructor === Object)
-            ))
-           ) {
+            )))) {
 
             // Next two logic checks flag any custom created objects as having any keys or properties as valid and not bad or empty. Note: Both logic checks below will NOT catch the following:
             // - new Date() - because this generates a fully qualified date equal to Now, not considered a bad value or empty. So ignored.
@@ -682,19 +723,27 @@ function IsBad(x) {
             // Note: For now we allow EMPTY OBJECT to come in that have a key or property assigned to undefined, NaN, or null as there may be an explicit reason for a developer to create such an object versus an empty one. If we want to enforce, say {undefined} as empty, we would need to check for such a property or key in new logic below.
             if ((Object.keys && (typeof Object.keys(x)) && (typeof Object.keys(x).length === 'number') && Object.keys(x).length === 0)
             ) {
-                IsBadMessage = 'IsBad() : true : type = Object (empty without keys) : ' + x;
+                IsBadMessage = 'IsBad() : result=true : type=Object (empty without properties) : ' + x;
                 return true;
+            } else {
+                // Catches {NaN}, {undefined}, and {null}
+                if (Object.keys(x).length == 1 && 
+                    (Object.keys(x)[0] === 'NaN' || Object.keys(x)[0] === 'undefined' || Object.keys(x)[0] === 'null')
+                ) {
+                    IsBadMessage = 'IsBad() : result=true : type=Object (empty with bad property) : ' + x;
+                    return true;
+                }
             }
 
             // Empty Object Detector #2
             // Warning: This matches Date Objects too so gives false empty object, but above logic filters date types out. "getOwnPropertyNames" - detection works on non-prototype properties of the object versus "for (const property1 in x){...}" which does not and would give false positives on some objects.
             if (Object.getOwnPropertyNames && (typeof Object.getOwnPropertyNames(x)) && (typeof Object.getOwnPropertyNames(x).length === 'number') && (Object.getOwnPropertyNames(x).length === 0)
             ) {
-                IsBadMessage = 'IsBad() : true : type = Object (empty without properties) : ' + x;
+                IsBadMessage = 'IsBad() : result=true : type=Object (empty without properties) : ' + x;
                 return true;
             }
 
-            IsBadMessage = 'IsBad() : false : type = Object : ' + x;
+            IsBadMessage = 'IsBad() : result=false : type=Object : ' + x;
             return false;
 
         }
@@ -702,14 +751,23 @@ function IsBad(x) {
 
         // GENERIC OBJECTS WITH ANY PROPERTIES FILTER: Objects with one or more properties are caught here and flagged as NOT empty. This logic checks prototype as well as object properties, so could give false positives. This logic below only catches Non-Objects assigned primitive values, true Objects with one or more valid properties, and non-empty strings. Flags them as NOT empty early before object tests below.
         // WARNING: Empty new Objects ("{}" or "new Object()"), or wrapped-boxed objects around primitive using "new" for Numbers, Dates, Booleans, and Symbols are skipped over by this logic below so not caught as being NOT empty! Logic below REMOVES any object that has has one or more properties (object or prototype).
-        for (const property1 in x) {
-            IsBadMessage = 'IsBad() : false : type = Unknown (with properties) : ' + x;
-            return false;
+        if (type === 0) {
+            for (const property1 in x) {
+                IsBadMessage = 'IsBad() : result=false : type=Unknown (with properties) : ' + x;
+                return false;
+            }
         }
 
-        // Catchall returns NOT empty or bad, by default. Never return undefined either!
-        IsBadMessage = 'IsBad() : false : type = Unknown (with value) : ' + x;
-        return false;
+        // Catchall returns bad by default on all non-typed values. Since we cannot test the item assume the value is bad for now. The last condition is a typed item whose value mismatches that type.
+        if (type === 0) {
+            IsBadMessage = 'IsBad() : result=true : type=Unknown : ' + x;
+            return true;
+        } else {
+            // If a user passed in a type as an argument, and the value does not match the type, it is bad.
+            IsBadMessage = 'IsBad() : result=true : type=Unknown (not type "' + types[type] + '") : ' + x;
+            return true;
+        }
+
 
     } catch (e) {
 
@@ -749,7 +807,7 @@ var IsBadTester = {
 
                 // Print result in Developer Tools (F12) console section in the web browser.
                 // Optional: Can also print out IsBad() message "IsBadMessage" at the end for more details of what value went bad in what section of the function and why.
-                console.log('IsBadTester() : ' + IsBad(data[i].test) + ' : ' + data[i].name + ' : ' + IsBadMessage);
+                console.log('IsBadTester() : result=' + IsBad(data[i].test, data[i].type) + ' : tested type=' + data[i].type + ' : value=' + data[i].name + '\n\rMessage=' + IsBadMessage);
                 //console.log('IsBadTester() : '+IsBad(data[i].test)+' : '+data[i].name);
 
             } catch (e) {
@@ -768,255 +826,272 @@ var IsBadTester = {
     },
     // TEST VALUES
     testdata: [
-        { test: false, name: "false" },
-        { test: 0, name: "0" },
-        { test: 0.0, name: "0.0" },
-        { test: 0x0, name: "0x0" },
-        { test: -0, name: "-0" },
-        { test: -0.0, name: "-0.0" },
-        { test: -0x0, name: "-0x0" },
-        { test: 0n, name: "0n" },
-        { test: 0x0n, name: "0x0n" },
-        { test: 8, name: "8" },
-        { test: '8', name: "'8'" },
-        { test: '-10', name: "'-10'" },
-        { test: '0', name: "'0'" },
-        { test: '5', name: "'5'" },
-        { test: '+10', name: "'+10'" },
-        { test: -16, name: "-16" },
-        { test: 0, name: "0" },
-        { test: -0, name: "-0" },
-        { test: 32, name: "32" },
-        { test: '040', name: "'040'" },
-        { test: 0144, name: "0144" },// octal
-        { test: 0o0144, name: "0o0144" },// octal
-        { test: '0xFF', name: "'0xFF'" },
-        { test: '-0x42', name: "'-0x42'" },
-        { test: 0xFF, name: "0xFF" },
-        { test: 1101, name: "1101" },// does JavaScript translate to an integer or bindary?
-        { test: 0b11111111, name: "0b11111111" },// binary
-        { test: 0b1111, name: "0b1111" },
-        { test: 9007199254740991, name: "9007199254740991" },// max value acceptable in JavaScript
-        { test: 9007199254740991n, name: "9007199254740991n" },// max value acceptable in JavaScript
-        { test: 9007199254740992, name: "9007199254740992" },// fail as integer
-        { test: 9007199254740992n, name: "9007199254740992n" },// acceptable when a BigInt
-        { test: '9007199254740992', name: "'9007199254740992'" },
-        { test: '9007199254740992n', name: "'9007199254740992n'" },// why to use strings to hold giant numbers
-        { test: 0xffffffffffffff, name: "0xffffffffffffff" },
-        { test: 0o377777777777777777, name: "0o377777777777777777" },
-        { test: 0b11111111111111111111111111111111111111111111111111111, name: "0b11111111111111111111111111111111111111111111111111111" },// max binary
-        { test: 0b111111111111111111111111111111111111111111111111111111, name: "0b111111111111111111111111111111111111111111111111111111" },
-        { test: '-1.6', name: "'-1.6'" },
-        { test: '4.536', name: "'4.536'" },
-        { test: '4,536', name: "'4,536'" },
-        { test: '123abc', name: "'123abc'" },
-        { test: -2.6, name: "-2.6" },
-        { test: -0.0, name: "-0.0" },
-        { test: 0.0, name: "0.0" },
-        { test: 3.1415, name: "3.1415" },
-        { test: 5.0000000000000000000000000000000001, name: "5.0000000000000000000000000000000001" },
-        { test: 4500000000000000.1, name: "4500000000000000.1" },
-        { test: 4500000000000000.5, name: "4500000000000000.5" },
-        { test: 999999999999999999999999999999999999999999999999999999999999999999999.0000000000000000000000000000, name: "999999999999999999999999999999999999999999999999999999999999999999999.0000000000000000000000000000" },
-        { test: 000001, name: "000001" },
-        { test: 0o000001, name: "0o000001" },
-        { test: 8e5, name: "8e5" },
-        { test: 234e+7, name: "234e+7" },
-        { test: -123e12, name: "-123e12" },
-        { test: '123e-2', name: "'123e-2'" },
-        { test: BigInt(55), name: "BigInt(55)" },
-        { test: BigInt('55'), name: "BigInt('55')" },
-        { test: 1.0e+15, name: "1.0e+15" },// within safe integer range of ~ 9 quadrillion
-        { test: 1.0e+16, name: "1.0e+16" },// beyond max safe JavaScript integer value of ~ 9 quadrillion
-        { test: BigInt(1.0e+16), name: "BigInt(1.0e+16)" },// converted to bigint the number is in range
-        { test: 1.79E+308, name: "1.79E308" },// max value JavaScript says it can hold in memory
-        { test: BigInt(1.79E+308), name: "BigInt(1.79E308)" },
-        { test: 1.7976931348623157e+308, name: "1.7976931348623157e+308" },
-        { test: BigInt(1.7976931348623157e+308), name: "BigInt(1.7976931348623157e+308)" },
-        //{test:BigInt(1.7976931348623157e+309),name:"BigInt(1.7976931348623157e+309)"},// fails as BigInt() says number acts as Infinity and not an integer
-        //{test:BigInt(1.79E500),name:"BigInt(1.79E500)"},// fails as BigInt() says number acts as Infinity and not an integer
-        //{test:BigInt(-1.79E500),name:"BigInt(-1.79E500)"},// fails as BigInt() says number acts as Infinity and not an integer
-        { test: -9007199254740991, name: "-9007199254740991" },
-        { test: -9007199254740992, name: "-9007199254740992" },
-        { test: -9007199254740992n, name: "-9007199254740992n" },
-        { test: BigInt(-9007199254740992), name: "BigInt(-9007199254740992)" },
-        { test: 1.0E-10, name: "1.0E-10" },// in range using my 9 decimal max precision logic
-        { test: -1.0E-10, name: "-1.0E-10" },
-        { test: 0.9E-10, name: "0.9E-10" },// out of range using my 9 decimal max precision logic
-        { test: -0.9E-10, name: "-0.9E-10" },
-        { test: 5.5555555E-20, name: "5.5555555E-20" },
-        { test: -5.5555555E-20, name: "-5.5555555E-20" },
-        { test: 5E-324, name: "5E-324" },// max positive decimal number
-        { test: -5E-324, name: "-5E-324" },// max minimum decimal number
-        { test: 5E-325, name: "5E-325" },// reverts to 0 after max so ok
-        { test: -5E-325, name: "-5E-325" },// reverts to 0 after max so ok
-        { test: 1.7976931348623157e-500, name: "1.7976931348623157e-500" },// Returns 0 and false! JavaScript converts any decimal number smaller than 5E-324 (the smallest number) to 0 by default. So no way to stop or fix this script flaw! Be careful as division by this value would then return 0/0 as NaN and all others +-Infinity.
-        { test: -1.7976931348623157e-500, name: "-1.7976931348623157e-500" },// Returns 0 and false! JavaScript converts any decimal number smaller than 5E-324 (the smallest number) to 0 by default. So no way to stop or fix this script flaw! Be careful as division by this value would then return 0/0 as NaN and all others +-Infinity.
-        { test: null, name: "null" },
-        { test: undefined, name: "undefined" },
-        { test: NaN, name: "NaN" },
-        { test: 0/0, name: "0/0" },
-        { test: 0.1/0, name: "0.1/0" },
-        { test: -1 / 0, name: "-1/0" },
-        { test: 1 / Infinity, name: "1/Infinity" },
-        { test: Infinity / 0, name: "Infinity / 0" },
-        { test: "foo" / 3, name: "'foo'/3" },
-        { test: 0 / undefined, name: "0 / undefined" },
-        { test: 0 / NaN, name: "0 / NaN" },
-        { test: 0 / +Infinity, name: "0 / +Infinity" },
-        { test: 0 / -Infinity, name: "0 / -Infinity" },
-        { test: 1 / 0, name: "1 / 0" },
-        { test: 1 / undefined, name: "1 / undefined" },
-        { test: 1 / NaN, name: "1 / NaN" },
-        { test: 1 / +Infinity, name: "1 / +Infinity" },
-        { test: 1 / -Infinity, name: "1 / -Infinity" },
-        { test: 0 * Infinity, name: "0 * Infinity" },
-        { test: 1 * Infinity, name: "1 * Infinity" },
-        { test: 0 * null, name: "0 * null" },
-        { test: 0 * undefined, name: "0 * undefined" },
-        { test: 0 * NaN, name: "0 * NaN" },
-        { test: 1 * null, name: "1 * null" },
-        { test: 1 * undefined, name: "1 * undefined" },
-        { test: 1 * NaN, name: "1 * NaN" },
-        { test: null * null, name: "null * null" },
-        { test: 5 ** undefined, name: "5 ** undefined" },
-        { test: 5 ** NaN, name: "5 ** NaN" },
-        { test: 5 ** null, name: "5 ** null" },
-        { test: Infinity - Infinity, name: "Infinity - Infinity" },
-        { test: Infinity * 1, name: "Infinity * 1" },
-        { test: Infinity * undefined, name: "Infinity * undefined" },
-        { test: Number(null), name: "Number(null)" },
-        { test: 2 + null, name: "2 + null" },
-        { test: 2 + undefined, name: "2 + undefined" },
-        { test: 2 + Infinity, name: "2 + Infinity" },
-        { test: Number(' '), name: "Number(' ')" },
-        { test: Number(), name: "Number()" },
-        { test: Number(22), name: "Number(22)" },
-        { test: Number(123.123), name: "Number(123.123)" },
-        { test: Number('xyz'), name: "Number('xyz')" },
-        { test: Number(Infinity), name: "Number(Infinity)" },
-        { test: Number(NaN), name: "Number(NaN)" },
-        { test: new Number(), name: "new Number()" },
-        { test: new Number(22), name: "new Number(22)" },
-        { test: new Number(123.123), name: "new Number(123.123)" },
-        { test: new Number('xyz'), name: "new Number('xyz')" },
-        { test: new Number(Infinity), name: "new Number(Infinity)" },
-        { test: new Number(NaN), name: "new Number(NaN)" },
-        { test: Infinity, name: "Infinity" },
-        { test: +Infinity, name: "+Infinity" },
-        { test: -Infinity, name: "-Infinity" },
-        { test: new Number(Infinity), name: "new Number(Infinity)" },
-        { test: new Number(+Infinity), name: "new Number(+Infinity)" },
-        { test: new Number(-Infinity), name: "new Number(-Infinity)" },
-        { test: new Number(Number.MAX_SAFE_INTEGER), name: "new Number(Number.MAX_SAFE_INTEGER)" },
-        { test: new Number(Number.MIN_SAFE_INTEGER), name: "new Number(Number.MIN_SAFE_INTEGER)" },// this is a negative number version of the max version above!
-        { test: new Number(Number.MAX_SAFE_INTEGER + 1), name: "new Number(Number.MAX_SAFE_INTEGER+1)" },// this puts number out of integer acceptable ranges
-        { test: new Number(Number.MIN_SAFE_INTEGER - 1), name: "new Number(Number.MIN_SAFE_INTEGER-1)" },
-        { test: Number.POSITIVE_INFINITY, name: "Number.POSITIVE_INFINITY" },
-        { test: Number.NEGATIVE_INFINITY, name: "Number.NEGATIVE_INFINITY" },
-        { test: Number.MAX_VALUE, name: "Number.MAX_VALUE" },// max positive number allowed in JavaScript
-        { test: -Number.MAX_VALUE, name: "-Number.MAX_VALUE" },// max negative number allowed in JavaScript
-        { test: Number.MIN_VALUE, name: "Number.MIN_VALUE" },// smallest positive decimal number approaching zero. Any decimal smaller than this value is cast as 0 in JavaScript, so never a valid bad value test!
-        { test: -(Number.MIN_VALUE), name: "-(Number.MIN_VALUE)" },// smallest negative decimal number approaching zero.
-        { test: BigInt(Number.MAX_VALUE), name: "BigInt(Number.MAX_VALUE)" },
-        { test: BigInt(Number.MAX_VALUE + 1), name: "BigInt(Number.MAX_VALUE+1)" },// This may pass due to variations in precision past max values. Once it fails the BigInt cast itself will generate an error here, not in the function check, and convert value to "Infinity" which blows up the BigInt conversion method.
-        { test: BigInt(-(Number.MAX_VALUE)), name: "BigInt(-(Number.MAX_VALUE))" },
-        { test: BigInt(-(Number.MAX_VALUE + 1)), name: "BigInt(-(Number.MAX_VALUE+1))" },
-        //{test:BigInt(Number.MAX_VALUE+Number.MAX_VALUE),name:"BigInt(Number.MAX_VALUE+Number.MAX_VALUE)"},// fails because addition creates "Infinity"
-        //{test:BigInt(.00001),name:"BigInt(.00001)"},// not allowed
-        //{test:BigInt(Infinity),name:"BigInt(Infinity)"},// not allowed
-        { test: Number.EPSILON, name: "Number.EPSILON" },
-        { test: {}, name: "{}" },
-        { test: ({}), name: "({})" },
-        { test: { x: 3 }, name: "{x:3}" },
-        { test: { undefined }, name: "{undefined}" },
-        //{test:{null},name:"{null}"},// not allowed
-        { test: { NaN }, name: "{NaN}" },
-        { test: new Object(), name: "new Object()" },
-        { test: new Object({ x: 3 }), name: "new Object({x:3})" },
-        { test: new Object({ undefined }), name: "new Object({undefined})" },
-        //{test:new Object({null}),name:"new Object({null})"},// not allowed
-        { test: new Object({ NaN }), name: "new Object({NaN})" },
-        { test: function () { }, name: "function(){}" },
-        { test: function () { x: 3 }, name: "function(){x:3}" },
-        { test: function () { undefined }, name: "function(){undefined}" },
-        { test: function () { null }, name: "function(){null}" },
-        { test: function () { NaN }, name: "function(){NaN}" },
-        { test: window, name: "window" },
-        { test: [], name: "[]" },
-        { test: [3], name: "[3]" },
-        { test: Array(), name: "Array()" },
-        { test: Array(null), name: "Array(null)" },
-        { test: Array(undefined), name: "Array(undefined)" },
-        { test: new Array(), name: "new Array()" },
-        { test: new Array(null), name: "new Array(null)" },
-        { test: new Array(undefined), name: "new Array(undefined)" },
-        { test: "", name: "\"\"" },
-        { test: '', name: "''" },
-        { test: ``, name: "``" },
-        { test: '        ', name: "'        '" },
-        { test: '\t', name: "'\\t'" },
-        { test: '\r\n', name: "'\\r\\n'" },
-        { test: 'bcfed5.2', name: "'bcfed5.2'" },
-        { test: '3.1000000n', name: "'3.1000000n'" },
-        { test: '7.2acdgs', name: "'7.2acdgs'" },
-        { test: new String('\t'), name: "new String('\\t')" },
-        { test: new String('\r\n'), name: "new String('\\r\\n')" },
-        { test: 'xabcdefx', name: "'xabcdefx'" },
-        { test: 'abcdefghijklm1234567890', name: "abcdefghijklm1234567890" },
-        { test: String(), name: "String()" },
-        { test: String('hello'), name: "String('hello')" },
-        { test: String(-0.0), name: "String(-0.0)" },
-        { test: new String(), name: "new String()" },
-        { test: new String('hello'), name: "new String('hello')" },
-        { test: new String(-0.0), name: "new String(-0.0)" },
-        { test: '1/1/2020', name: "'1/1/2020'" },
-        { test: Date(), name: "Date()" },
-        { test: Date('1/1/2022'), name: "Date('1/1/2022')" },
-        { test: Date('0/50/10'), name: "Date('0/50/10')" },
-        { test: Date(1 / 1 / 2022), name: "Date(1/1/2022)" },
-        { test: Date(2009, 1, 1), name: "Date(2009, 1, 1)" },
-        { test: Date('xyz'), name: "Date('xyz')" },
-        { test: Date(-0.00001), name: "Date(-0.00001)" },
-        { test: Date(undefined), name: "Date(undefined)" },
-        { test: Date(null), name: "Date(null)" },
-        { test: Date(NaN), name: "Date(NaN)" },
-        { test: new Date(), name: "new Date()" },
-        { test: new Date('1/1/2022'), name: "new Date('1/1/2022')" },
-        { test: new Date('0/50/10'), name: "new Date('0/50/10')" },
-        { test: new Date(1 / 1 / 2022), name: "new Date(1/1/2022)" },
-        { test: new Date(2009, 1, 1), name: "new Date(2009, 1, 1)" },
-        { test: new Date('xyz'), name: "new Date('xyz')" },
-        { test: new Date(-0.00001), name: "new Date(-0.00001)" },
-        { test: new Date(undefined), name: "new Date(undefined)" },
-        { test: new Date(null), name: "new Date(null)" },
-        { test: new Date(NaN), name: "new Date(NaN)" },
-        { test: true, name: "true" },
-        { test: false, name: "false" },
-        { test: Boolean(), name: "Boolean()" },
-        { test: Boolean('xyz'), name: "Boolean('xyz')" },
-        { test: Boolean(true), name: "Boolean(true)" },
-        { test: new Boolean(), name: "new Boolean()" },
-        { test: new Boolean('xyz'), name: "new Boolean('xyz')" },
-        { test: new Boolean(Infinity), name: "new Boolean(Infinity)" },
-        { test: new Boolean(true), name: "new Boolean(true)" },
-        { test: new RegExp(), name: "new RegExp()" },
-        { test: new RegExp(33), name: "new RegExp(33)" },
-        { test: new RegExp('33'), name: "new RegExp('33')" },
-        { test: new RegExp(Infinity), name: "new RegExp(Infinity)" },
-        { test: new RegExp(null), name: "new RegExp(null)" },
-        { test: new RegExp(NaN), name: "new RegExp(NaN)" },
-        { test: new RegExp(undefined), name: "new RegExp(undefined)" },
-        { test: new RegExp('/^\s*$/'), name: "new RegExp('/^\s*$/')" },
-        { test: RegExp(), name: "RegExp()" },
-        { test: RegExp(33), name: "RegExp(33)" },
-        { test: RegExp(Infinity), name: "RegExp(Infinity)" },
-        { test: RegExp(null), name: "RegExp(null)" },
-        { test: RegExp(NaN), name: "RegExp(NaN)" },
-        { test: RegExp(undefined), name: "RegExp(undefined)" },
-        { test: RegExp('/^\s*$/'), name: "RegExp('/^\s*$/')" },
-        { test: Symbol(), name: "Symbol()" },
-        { test: Symbol('test'), name: "Symbol('test')" }
+        { test: false, type: "boolean", name: "false" },
+        {test: 0, type: "number", name: "0" },
+        {test: 0.0, type: "number",name: "0.0" },
+        {test: 0x0, type: "number",name: "0x0" },
+        {test: -0, type: "number",name: "-0" },
+        {test: -0.0, type: "number",name: "-0.0" },
+        {test: -0x0, type: "number",name: "-0x0" },
+        { test: 0n, type: "bigint",name: "0n" },
+        { test: 0x0n, type: "bigint",name: "0x0n" },
+        {test: 8, type: "number",name: "8" },
+        {test: '8', type: "number",name: "'8'" },
+        {test: '-10', type: "number",name: "'-10'" },
+        {test: '0', type: "number",name: "'0'" },
+        {test: '5', type: "number",name: "'5'" },
+        {test: '+10', type: "number",name: "'+10'" },
+        {test: -16, type: "number",name: "-16" },
+        {test: 0, type: "number",name: "0" },
+        {test: -0, type: "number",name: "-0" },
+        {test: 32, type: "number",name: "32" },
+        {test: '040', type: "number",name: "'040'" },
+        {test: 0144, type: "number",name: "0144" },// octal
+        {test: 0o0144, type: "number",name: "0o0144" },// octal
+        {test: '0xFF', type: "number",name: "'0xFF'" },
+        {test: '-0x42', type: "number",name: "'-0x42'" },
+        {test: 0xFF, type: "number",name: "0xFF" },
+        {test: 1101, type: "number",name: "1101" },// does JavaScript translate to an integer or bindary?
+        {test: 0b11111111, type: "number",name: "0b11111111" },// binary
+        {test: 0b1111, type: "number",name: "0b1111" },
+        {test: 9007199254740991, type: "number",name: "9007199254740991" },// max value acceptable in JavaScript
+        { test: 9007199254740991n, type: "bigint",name: "9007199254740991n" },// max value acceptable in JavaScript
+        {test: 9007199254740992, type: "number",name: "9007199254740992" },// fail as integer
+        { test: 9007199254740992n, type: "bigint",name: "9007199254740992n" },// acceptable when a BigInt
+        {test: '9007199254740992', type: "number",name: "'9007199254740992'" },
+        { test: '9007199254740992n', type: "bigint",name: "'9007199254740992n'" },// why to use strings to hold giant numbers
+        {test: 0xffffffffffffff, type: "number",name: "0xffffffffffffff" },
+        {test: 0o377777777777777777, type: "number",name: "0o377777777777777777" },
+        {test: 0b11111111111111111111111111111111111111111111111111111, type: "number",name: "0b11111111111111111111111111111111111111111111111111111" },// max binary
+        {test: 0b111111111111111111111111111111111111111111111111111111, type: "number",name: "0b111111111111111111111111111111111111111111111111111111" },
+        {test: '-1.6', type: "number",name: "'-1.6'" },
+        {test: '4.536', type: "number",name: "'4.536'" },
+        {test: '4,536', type: "number",name: "'4,536'" },
+        {test: '123abc', type: "number",name: "'123abc'" },
+        {test: -2.6, type: "number",name: "-2.6" },
+        {test: -0.0, type: "number",name: "-0.0" },
+        {test: 0.0, type: "number",name: "0.0" },
+        {test: 3.1415, type: "number",name: "3.1415" },
+        {test: 5.0000000000000000000000000000000001, type: "number",name: "5.0000000000000000000000000000000001" },
+        {test: 4500000000000000.1, type: "number",name: "4500000000000000.1" },
+        {test: 4500000000000000.5, type: "number",name: "4500000000000000.5" },
+        {test: 999999999999999999999999999999999999999999999999999999999999999999999.0000000000000000000000000000, type: "number",name: "999999999999999999999999999999999999999999999999999999999999999999999.0000000000000000000000000000" },
+        {test: 000001, type: "number",name: "000001" },
+        {test: 0o000001, type: "number",name: "0o000001" },
+        {test: 8e5, type: "number",name: "8e5" },
+        {test: 234e+7, type: "number",name: "234e+7" },
+        {test: -123e12, type: "number",name: "-123e12" },
+        {test: '123e-2', type: "number",name: "'123e-2'" },
+        { test: BigInt(55), type: "bigint",name: "BigInt(55)" },
+        { test: BigInt('55'), type: "",name: "BigInt('55')" },
+        {test: 1.0e+15, type: "number",name: "1.0e+15" },// within safe integer range of ~ 9 quadrillion
+        {test: 1.0e+16, type: "number",name: "1.0e+16" },// beyond max safe JavaScript integer value of ~ 9 quadrillion
+        {test: BigInt(1.0e+16), type: "bigint", name: "BigInt(1.0e+16)"},// converted to bigint the number is in range
+        {test: 1.79E+308, type: "number", name: "1.79E+308"},// max value JavaScript says it can hold in memory
+        {test: 1.79E+308, type: "bigint", name: "1.79E+308"},// "E+" is a BAD FORMAT FOR BIGINT. Why? it sees "e" as Number type, not bigint! (I fixed this in code)
+        {test: BigInt(1.79E+308), type: "number", name: "BigInt(1.79E+308)"},
+        {test: BigInt(1.79E+308), type: "bigint",name: "BigInt(1.79E+308)" },
+        {test: 1.7976931348623157e+308, type: "bigint",name: "1.7976931348623157e+308" },
+        {test: BigInt(1.7976931348623157e+308), type: "bigint",name: "BigInt(1.7976931348623157e+308)" },
+        //{test:BigInt(1.7976931348623157e+309), type: "bigint",name:"BigInt(1.7976931348623157e+309)"},// fails as BigInt() says number acts as Infinity and not an integer
+        //{test:BigInt(1.79E500), type: "bigint",name:"BigInt(1.79E500)"},// fails as BigInt() says number acts as Infinity and not an integer
+        //{test:BigInt(-1.79E500), type: "bigint",name:"BigInt(-1.79E500)"},// fails as BigInt() says number acts as Infinity and not an integer
+        {test: -9007199254740991, type: "number",name: "-9007199254740991" },
+        {test: -9007199254740992, type: "number",name: "-9007199254740992" },
+        { test: -9007199254740992n, type: "bigint",name: "-9007199254740992n" },
+        {test: BigInt(-9007199254740992), type: "bigint",name: "BigInt(-9007199254740992)" },
+        {test: 1.0E-10, type: "number",name: "1.0E-10" },// in range using my 9 decimal max precision logic
+        {test: -1.0E-10, type: "number",name: "-1.0E-10" },
+        {test: 0.9E-10, type: "number",name: "0.9E-10" },// out of range using my 9 decimal max precision logic
+        {test: -0.9E-10, type: "number",name: "-0.9E-10" },
+        {test: 5.5555555E-20, type: "number",name: "5.5555555E-20" },
+        {test: -5.5555555E-20, type: "number",name: "-5.5555555E-20" },
+        {test: 5E-324, type: "bigint",name: "5E-324" },// max positive decimal number
+        {test: -5E-324, type: "bigint",name: "-5E-324" },// max minimum decimal number
+        {test: 5E-325, type: "bigint",name: "5E-325" },// reverts to 0 after max so ok
+        {test: -5E-325, type: "bigint",name: "-5E-325" },// reverts to 0 after max so ok
+        {test: 1.7976931348623157e-500, type: "number",name: "1.7976931348623157e-500" },// Returns 0 and false! JavaScript converts any decimal number smaller than 5E-324 (the smallest number) to 0 by default. So no way to stop or fix this script flaw! Be careful as division by this value would then return 0/0 as NaN and all others +-Infinity.
+        {test: -1.7976931348623157e-500, type: "number",name: "-1.7976931348623157e-500" },// Returns 0 and false! JavaScript converts any decimal number smaller than 5E-324 (the smallest number) to 0 by default. So no way to stop or fix this script flaw! Be careful as division by this value would then return 0/0 as NaN and all others +-Infinity.
+        {test: null, type: "number",name: "null" },
+        {test: undefined, type: "number", name: "undefined"},
+        {test: null, type: "string", name: "null"},
+        {test: undefined, type: "string", name: "undefined"},
+        {test: NaN, type: "", name: "NaN"},
+        {test: NaN, type: "number", name: "NaN"},
+        {test: NaN, type: "string", name: "NaN"},
+        {test: 0 / 0, type: "number",name: "0/0" },
+        {test: 0.1 / 0, type: "number",name: "0.1/0" },
+        {test: -1 / 0, type: "number",name: "-1/0" },
+        {test: 1 / Infinity, type: "number",name: "1/Infinity" },
+        {test: Infinity / 0, type: "number",name: "Infinity / 0" },
+        {test: "foo" / 3, type: "number",name: "'foo'/3" },
+        {test: 0 / undefined, type: "number",name: "0 / undefined" },
+        {test: 0 / NaN, type: "number",name: "0 / NaN" },
+        {test: 0 / +Infinity, type: "number",name: "0 / +Infinity" },
+        {test: 0 / -Infinity, type: "number",name: "0 / -Infinity" },
+        {test: 1 / 0, type: "number",name: "1 / 0" },
+        {test: 1 / undefined, type: "number",name: "1 / undefined" },
+        {test: 1 / NaN, type: "number",name: "1 / NaN" },
+        {test: 1 / +Infinity, type: "number",name: "1 / +Infinity" },
+        {test: 1 / -Infinity, type: "number",name: "1 / -Infinity" },
+        {test: 0 * Infinity, type: "number",name: "0 * Infinity" },
+        {test: 1 * Infinity, type: "number",name: "1 * Infinity" },
+        {test: 0 * null, type: "number",name: "0 * null" },
+        {test: 0 * undefined, type: "number",name: "0 * undefined" },
+        {test: 0 * NaN, type: "number",name: "0 * NaN" },
+        {test: 1 * null, type: "number",name: "1 * null" },
+        {test: 1 * undefined, type: "number",name: "1 * undefined" },
+        {test: 1 * NaN, type: "number",name: "1 * NaN" },
+        {test: null * null, type: "number",name: "null * null" },
+        {test: 5 ** undefined, type: "number",name: "5 ** undefined" },
+        {test: 5 ** NaN, type: "number",name: "5 ** NaN" },
+        {test: 5 ** null, type: "number",name: "5 ** null" },
+        {test: Infinity - Infinity, type: "number",name: "Infinity - Infinity" },
+        {test: Infinity * 1, type: "number",name: "Infinity * 1" },
+        {test: Infinity * undefined, type: "number",name: "Infinity * undefined" },
+        {test: Number(null), type: "number",name: "Number(null)" },
+        {test: 2 + null, type: "number",name: "2 + null" },
+        {test: 2 + undefined, type: "number",name: "2 + undefined" },
+        {test: 2 + Infinity, type: "number",name: "2 + Infinity" },
+        {test: Number(' '), type: "number",name: "Number(' ')" },
+        {test: Number(), type: "number",name: "Number()" },
+        {test: Number(22), type: "number",name: "Number(22)" },
+        {test: Number(123.123), type: "number",name: "Number(123.123)" },
+        {test: Number('xyz'), type: "number",name: "Number('xyz')" },
+        {test: Number(Infinity), type: "number",name: "Number(Infinity)" },
+        {test: Number(NaN), type: "number", name: "Number(NaN)"},
+        {test: Number({}), type: "number", name: "Number({})"},
+        {test: new Number({}), type: "number",name: "new Number({})" },
+        {test: new Number(22), type: "number",name: "new Number(22)" },
+        {test: new Number(123.123), type: "number",name: "new Number(123.123)" },
+        {test: new Number('xyz'), type: "number",name: "new Number('xyz')" },
+        {test: new Number(Infinity), type: "number",name: "new Number(Infinity)" },
+        {test: new Number(NaN), type: "number",name: "new Number(NaN)" },
+        {test: Infinity, type: "number",name: "Infinity" },
+        {test: +Infinity, type: "number",name: "+Infinity" },
+        {test: -Infinity, type: "number",name: "-Infinity" },
+        {test: new Number(Infinity), type: "number",name: "new Number(Infinity)" },
+        {test: new Number(+Infinity), type: "number",name: "new Number(+Infinity)" },
+        {test: new Number(-Infinity), type: "number",name: "new Number(-Infinity)" },
+        {test: new Number(Number.MAX_SAFE_INTEGER), type: "number",name: "new Number(Number.MAX_SAFE_INTEGER)" },
+        {test: new Number(Number.MIN_SAFE_INTEGER), type: "number",name: "new Number(Number.MIN_SAFE_INTEGER)" },// this is a negative number version of the max version above!
+        {test: new Number(Number.MAX_SAFE_INTEGER + 1), type: "number",name: "new Number(Number.MAX_SAFE_INTEGER+1)" },// this puts number out of integer acceptable ranges
+        {test: new Number(Number.MIN_SAFE_INTEGER - 1), type: "number",name: "new Number(Number.MIN_SAFE_INTEGER-1)" },
+        {test: Number.POSITIVE_INFINITY, type: "number",name: "Number.POSITIVE_INFINITY" },
+        {test: Number.NEGATIVE_INFINITY, type: "number",name: "Number.NEGATIVE_INFINITY" },
+        {test: Number.MAX_VALUE, type: "number",name: "Number.MAX_VALUE" },// max positive number allowed in JavaScript
+        {test: -Number.MAX_VALUE, type: "number",name: "-Number.MAX_VALUE" },// max negative number allowed in JavaScript
+        {test: Number.MIN_VALUE, type: "number",name: "Number.MIN_VALUE" },// smallest positive decimal number approaching zero. Any decimal smaller than this value is cast as 0 in JavaScript, so never a valid bad value test!
+        {test: -(Number.MIN_VALUE), type: "number",name: "-(Number.MIN_VALUE)" },// smallest negative decimal number approaching zero.
+        { test: BigInt(Number.MAX_VALUE), type: "bigint",name: "BigInt(Number.MAX_VALUE)" },
+        {test: (BigInt(Number.MAX_VALUE) + BigInt(1)), type: "bigint", name: "(BigInt(Number.MAX_VALUE)+BigInt(1))" },// This may pass due to variations in precision past max values. Once it fails the BigInt cast itself will generate an error here, type: "",not in the function check, and convert value to "Infinity" which blows up the BigInt conversion method.
+        {test: BigInt(-(Number.MAX_VALUE)), type: "bigint",name: "BigInt(-(Number.MAX_VALUE))" },
+        {test: (BigInt(-(Number.MAX_VALUE)) + BigInt(-1)), type: "bigint", name: "(BigInt(-(Number.MAX_VALUE)) + BigInt(-1))" },
+        //{test:BigInt(Number.MAX_VALUE+Number.MAX_VALUE), type: "bigint",name:"BigInt(Number.MAX_VALUE+Number.MAX_VALUE)"},// fails because addition creates "Infinity"
+        //{test:BigInt(.00001), type: "bigint",name:"BigInt(.00001)"},// not allowed - error
+        //{test:BigInt(Infinity), type: "bigint",name:"BigInt(Infinity)"},// not allowed - error
+        { test: Number.EPSILON, type: "number",name: "Number.EPSILON" },
+        { test: {}, type: "object",name: "{}" },// empty object should be rejected
+        {test: ({}), type: "object",name: "({})" },
+        {test: {x: 3}, type: "object",name: "{x:3}" },
+        {test: {undefined}, type: "object",name: "{undefined}" },
+        //{test:{null}, type: "object",name:"{null}"},// not allowed - error
+        {test: {NaN}, type: "object",name: "{NaN}" },
+        {test: new Object(), type: "object",name: "new Object()" },
+        {test: new Object({x: 3}), type: "object",name: "new Object({x:3})" },
+        {test: new Object({undefined}), type: "object",name: "new Object({undefined})" },
+        //{test:new Object({null}), type: "object",name:"new Object({null})"},// not allowed - error
+        {test: new Object({NaN}), type: "object",name: "new Object({NaN})" },
+        {test: function () {}, type: "function",name: "function(){}" },
+        {test: function () {x: 3}, type: "function",name: "function(){x:3}" },
+        { test: window, type: "",name: "window" },
+        { test: [], type: "array",name: "[]" },
+        {test: [3], type: "array",name: "[3]" },
+        {test: Array(), type: "array",name: "Array()" },
+        {test: Array(null), type: "array",name: "Array(null)" },
+        {test: Array(undefined), type: "array", name: "Array(undefined)"},
+        //{test: Array(NaN), type: "array", name: "Array(NaN)"},// creates array length error?
+        {test: new Array(), type: "array",name: "new Array()" },
+        {test: new Array(null), type: "array",name: "new Array(null)" },
+        {test: new Array(undefined), type: "array", name: "new Array(undefined)"},
+        //{test: new Array(NaN), type: "array", name: "new Array(NaN)"},// creates array length error?
+        { test: "", type: "string",name: "\"\"" },
+        {test: '', type: "string",name: "''" },
+        {test: ``, type: "string",name: "``" },
+        {test: '        ', type: "string",name: "'        '" },
+        {test: '\t', type: "string",name: "'\\t'" },
+        {test: '\r\n', type: "string",name: "'\\r\\n'" },
+        {test: 'bcfed5.2', type: "string",name: "'bcfed5.2'" },
+        {test: '3.1000000n', type: "string",name: "'3.1000000n'" },
+        {test: '7.2acdgs', type: "string",name: "'7.2acdgs'" },
+        {test: new String('\t'), type: "string",name: "new String('\\t')" },
+        {test: new String('\r\n'), type: "string",name: "new String('\\r\\n')" },
+        {test: 'xabcdefx', type: "string",name: "'xabcdefx'" },
+        {test: 'abcdefghijklm1234567890', type: "string",name: "'abcdefghijklm1234567890'" },
+        {test: String(), type: "string",name: "String()" },
+        {test: String('hello'), type: "string",name: "String('hello')" },
+        {test: String(-0.0), type: "string",name: "String(-0.0)" },
+        {test: new String(), type: "string",name: "new String()" },
+        {test: new String('hello'), type: "string",name: "new String('hello')" },
+        {test: new String(-0.0), type: "string",name: "new String(-0.0)" },
+        {test: '1/1/2020', type: "string", name: "'1/1/2020'"},
+        {test: '1/1/2020', type: "date", name: "'1/1/2020'"},
+        {test: '1/1/2022', type: "date", name: "'1/1/2022'"},
+        {test: '0/50/10', type: "date", name: "'0/50/10'"},
+        {test: '2009,1,1', type: "date", name: "'2009,1,1'"},
+        {test: 'xyz', type: "date", name: "'xyz'"},
+        {test: -0.00001, type: "date", name: "-0.00001"},
+        {test: undefined, type: "date", name: "undefined"},
+        {test: null, type: "date", name: "null"},
+        {test: NaN, type: "date", name: "NaN"},
+        {test: Date(), type: "date",name: "Date()" },
+        {test: Date('1/1/2022'), type: "date",name: "Date('1/1/2022')" },
+        {test: Date('0/50/10'), type: "date",name: "Date('0/50/10')" },
+        {test: Date(1 / 1 / 2022), type: "date",name: "Date(1/1/2022)" },
+        {test: Date(2009, 1, 1), type: "date",name: "Date(2009, 1, 1)" },
+        {test: Date('xyz'), type: "date",name: "Date('xyz')" },
+        {test: Date(-0.00001), type: "date",name: "Date(-0.00001)" },
+        {test: Date(undefined), type: "date",name: "Date(undefined)" },
+        {test: Date(null), type: "date",name: "Date(null)" },
+        {test: Date(NaN), type: "date",name: "Date(NaN)" },
+        {test: new Date(), type: "date",name: "new Date()" },
+        {test: new Date('1/1/2022'), type: "date",name: "new Date('1/1/2022')" },
+        {test: new Date('0/50/10'), type: "date",name: "new Date('0/50/10')" },
+        {test: new Date(1 / 1 / 2022), type: "date",name: "new Date(1/1/2022)" },
+        {test: new Date(2009, 1, 1), type: "date",name: "new Date(2009, 1, 1)" },
+        {test: new Date('xyz'), type: "date",name: "new Date('xyz')" },
+        {test: new Date(-0.00001), type: "date", name: "new Date(-0.00001)"},
+        {test: new Date(1), type: "date", name: "new Date(1)"},
+        {test: new Date(50000), type: "date", name: "new Date(50000)"},
+        {test: new Date(undefined), type: "date",name: "new Date(undefined)" },
+        {test: new Date(null), type: "date",name: "new Date(null)" },
+        {test: new Date(NaN), type: "date",name: "new Date(NaN)" },
+        { test: true, type: "boolean",name: "true" },
+        {test: false, type: "boolean",name: "false" },
+        {test: Boolean(), type: "boolean",name: "Boolean()" },
+        {test: Boolean('xyz'), type: "boolean",name: "Boolean('xyz')" },
+        {test: Boolean(true), type: "boolean",name: "Boolean(true)" },
+        {test: new Boolean(), type: "boolean",name: "new Boolean()" },
+        {test: new Boolean('xyz'), type: "boolean",name: "new Boolean('xyz')" },
+        {test: new Boolean(Infinity), type: "boolean",name: "new Boolean(Infinity)" },
+        {test: new Boolean(true), type: "boolean", name: "new Boolean(true)"},
+        {test: RegExp(), type: "regex", name: "RegExp()"},
+        {test: RegExp(33), type: "regex", name: "RegExp(33)"},
+        {test: RegExp(Infinity), type: "regex", name: "RegExp(Infinity)"},
+        {test: RegExp(null), type: "regex", name: "RegExp(null)"},
+        {test: RegExp(NaN), type: "regex", name: "RegExp(NaN)"},
+        {test: RegExp(undefined), type: "regex", name: "RegExp(undefined)"},
+        {test: RegExp('/^\s*$/'), type: "regex", name: "RegExp('/^\s*$/')"},
+        {test: new RegExp(), type: "regex",name: "new RegExp()" },
+        {test: new RegExp(33), type: "regex",name: "new RegExp(33)" },
+        {test: new RegExp('33'), type: "regex",name: "new RegExp('33')" },
+        {test: new RegExp(Infinity), type: "regex",name: "new RegExp(Infinity)" },
+        {test: new RegExp(null), type: "regex",name: "new RegExp(null)" },
+        {test: new RegExp(NaN), type: "regex",name: "new RegExp(NaN)" },
+        {test: new RegExp(undefined), type: "regex",name: "new RegExp(undefined)" },
+        {test: new RegExp('/^\s*$/'), type: "regex",name: "new RegExp('/^\s*$/')" },
+        { test: Symbol(), type: "symbol",name: "Symbol()" },
+        {test: Symbol('test'), type: "symbol",name: "Symbol('test')" }
     ]
 };
 
@@ -1025,15 +1100,15 @@ var IsBadTester = {
 //IsBadTester.start();
 
 // HOW TO CALL THE PLAIN ISBAD(x) TEST
-//console.log('Test: ' + IsBad(1.0e+16) + ' : ' + IsBadMessage);
+//console.log('Test: ' + IsBad(1.0e+16,"number") + ' : ' + IsBadMessage);
 
 // RUN JAVASCRIPT "BAD" DATA TEST with DEFAULTS
 // Test "IfBad(x,d)" with defaults to see if it returns default values when argument is a "bad" value:
-//console.log('New IfBad with Default: ' + IfBad(1.0e+15, 0));
-//console.log('New IfBad with Default: ' + IfBad(1.0e+16, 0));
-//console.log('New IfBad with Default: ' + IfBad(new Number('xyz'), 1));
-//console.log('New IfBad with Default: ' + IfBad(new Date('xyz'), new Date('6/1/2022')));
-//console.log('New IfBad with Default: ' + IfBad(Infinity, 100));
+//console.log('New IfBad with Default: ' + IfBad(1.0e+15, "number", 0));
+//console.log('New IfBad with Default: ' + IfBad(1.0e+16, "number", 0));
+//console.log('New IfBad with Default: ' + IfBad(new Number('xyz'), "number", 1));
+//console.log('New IfBad with Default: ' + IfBad(new Date('xyz'), "date", new Date('6/1/2022')));
+//console.log('New IfBad with Default: ' + IfBad(Infinity, "number", 100));
 
 
 // ------------------------------------------------------------
@@ -1529,7 +1604,14 @@ var IsNumTester={
         {test: false,name: "false"},
         {test: Boolean(),name: "Boolean()"},
         {test: Boolean('xyz'),name: "Boolean('xyz')"},
-        {test: Boolean(true),name: "Boolean(true)"},
+        {test: Boolean(true), name: "Boolean(true)"},
+        {test: RegExp(), name: "RegExp()"},
+        {test: RegExp(33), name: "RegExp(33)"},
+        {test: RegExp(Infinity), name: "RegExp(Infinity)"},
+        {test: RegExp(null), name: "RegExp(null)"},
+        {test: RegExp(NaN), name: "RegExp(NaN)"},
+        {test: RegExp(undefined), name: "RegExp(undefined)"},
+        {test: RegExp('/^\s*$/'), name: "RegExp('/^\s*$/')"},
         {test: new Boolean(),name: "new Boolean()"},
         {test: new Boolean('xyz'),name: "new Boolean('xyz')"},
         {test: new Boolean(Infinity),name: "new Boolean(Infinity)"},
@@ -1542,13 +1624,6 @@ var IsNumTester={
         {test: new RegExp(NaN),name: "new RegExp(NaN)"},
         {test: new RegExp(undefined),name: "new RegExp(undefined)"},
         {test: new RegExp('/^\s*$/'),name: "new RegExp('/^\s*$/')"},
-        {test: RegExp(),name: "RegExp()"},
-        {test: RegExp(33),name: "RegExp(33)"},
-        {test: RegExp(Infinity),name: "RegExp(Infinity)"},
-        {test: RegExp(null),name: "RegExp(null)"},
-        {test: RegExp(NaN),name: "RegExp(NaN)"},
-        {test: RegExp(undefined),name: "RegExp(undefined)"},
-        {test: RegExp('/^\s*$/'),name: "RegExp('/^\s*$/')"},
         {test: Symbol(),name: "Symbol()"},
         {test: Symbol('test'),name: "Symbol('test')"}
     ]

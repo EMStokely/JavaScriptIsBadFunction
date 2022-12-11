@@ -47,9 +47,24 @@ The "IsBad()" function is in a SINGLE JAVASCRIPT FILE so very easy to copy-and-p
 
 In addition, I have added a very comprehensive "IsBadTester()" function with a giant array of typical BAD JAVASCRIPT DATA VALUES you can run and then review as results in the browser console developer tools. This allows you to check what exactly the IsBad() function returns for various types of numeric and non-numeric data. Just run the "IsBadTester()" function and it will list in the console window of the browser's developer tools a large list of "bad" and "good" data test results returned from the "IsBad()" function you can review. Feel free to add to my my bad data list and run your own bad data tests!
 
+HOW IT WORKS
+
+IsBad(value,type) - IsBad takes two arguments: The Value you are testing and an optional Type. This allows you to either test your value against all types and let the function return a true/false if your value matches one of dozens of "bad" values or ranges. This might be helpful if you do not know the starting type. If you do expect a specific type (string, number, boolean, object. etc.), its very helpful to tell the function what JavaScript type (object or primitive type) you expect, so it can then focus on alerting you if its the wrong type, but also if its the right type but failed some other test.
+
+Example:
+
+let mynumber = "hello";
+IsBad(mynumber,"number") - This would return true (its bad!) because you expected a number but your variable was assigned to a text string in your program. The type is optional. Without the "number" type argument, the text string would be ok (return false) because its a valid value without the type check. There are many more complicated type scenarios, but this gives you the basic idea.
+
 BONUS!
 
-In addition, I have added a full suite of excellent error-checking JavaScript functions that patch holes and bugs in the new null coalesce, truthy, falsy, or conditional ternary operators in ECMAScript that will fail or confuse programmers in many scenarios. These new functions allow you to purely check for edge-case values that might blow up your JS applications, or which combine the checks of multiple other operators into one. The IsBad() mother function included most of these features alread. But these functions allow you a narrower target for detecting smaller bug-checking scenarios in your data. And like IfBad(), all have built in default value return parameters so you can easily call these inside expressions and keep your code logic moving forward. They include the following new functions in JavaScript:
+In addition to the basic "IsBad()" data tester funtion, I have added an overload of the function called "IfBad(value,type,default)". You can now have the function return a "default value" if bad data is detected.
+
+Example:
+
+IfBad(x,"string","hello") would return "hello" if your value for "x" was a non-string value.
+
+Even better, I have added a full suite of excellent function for true "null" and a fast IsNum() numerical values checker and a IsStrictNum() true integer checker. Included is an error-checking JavaScript function deal with holes and bugs in the new null coalesce, truthy, falsy, or conditional ternary operators in ECMAScript (that have failed or confused programmers in many scenarios). These new functions allow you to purely check for edge-case values that might blow up your JS applications, or which combine the checks of multiple other operators into one. The IsBad() mother function included most of these features alread. But these functions allow you a narrower target for detecting smaller bug-checking scenarios in your data. And like IfBad(), all have built in default value return parameters so you can easily call these inside expressions and keep your code logic moving forward. They include the following new functions in JavaScript:
 
 - IsNull()/IfNull()
 - IsNum()/IfNum()
@@ -59,4 +74,5 @@ In addition, I have added a full suite of excellent error-checking JavaScript fu
 Please keep in mind this is version 1.0 of these functions, and they will likely have many new goodies and improvements going forward.
 
 - Mitchell Stokely, 2022
+
 ---
