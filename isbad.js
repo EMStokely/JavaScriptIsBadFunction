@@ -632,7 +632,7 @@ function IsBad(x,t) {
         // So use the date checked carefully and plan to always use "new Date(x)" and a standard date-friendly value for "x" as a number, or "2000,2,1" etc which readily convert to accurate historical dates.
         if (type === 0 || type === 5) {
             if (((typeof x === 'date')// check true date objects first
-                || (x.getMonth && (typeof x.getMonth === 'function'))
+                || (x.getMonth && (typeof x.getMonth === 'function') && x.getMonth >= 0)
                 || (x instanceof Date)
                 || (Date && (x instanceof Date || (Object.prototype.toString.call(x) === '[object Date]') || (x).constructor === Date)))) {
 
@@ -642,7 +642,7 @@ function IsBad(x,t) {
                     || x === null
                     || x === new Date(NaN)
                     || x === new Date(undefined)
-                    || x.toISOString() === new Date(0).toISOString()// This compares date-time to the millisecond. If the value date-time is the same as the default start date in JavaScript, or 12/31/1969 at midnight, distrust it. We have to reject these dates for now, as any bad numbers or strings default "new Date()" to that default date when they fail. If you app explicitly uses 12/31/1969 then modify this code and use other means to catch bad values that default Date() Objects to this hard date-time.
+                    || (x.toISOString() && x.toISOString() === new Date(0).toISOString())// This compares date-time to the millisecond. If the value date-time is the same as the default start date in JavaScript, or 12/31/1969 at midnight, distrust it. We have to reject these dates for now, as any bad numbers or strings default "new Date()" to that default date when they fail. If you app explicitly uses 12/31/1969 then modify this code and use other means to catch bad values that default Date() Objects to this hard date-time.
                 ) {
                     IsBadMessage = 'IsBad() : result=true : type=Date (unreliable date conversion 1) : ' + (new Date(x)).toString();
                     return true;
