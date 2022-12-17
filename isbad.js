@@ -288,7 +288,7 @@ function IsBad(x,t) {
         } else if ((type === 0 || type === 4) &&
             (Boolean && (x instanceof Boolean || (Object.prototype.toString.call(x) === '[object Boolean]') || (x).constructor === Boolean))) {
             // If a new Boolean() object is created with any properties assigned, do not flag it as "bad" or check for values below.
-            for (const property1 in x) {
+            for (const prop in x) {
                 IsBadMessage = 'IsBad() : result=false : type=Boolean (with properties) : ' + x;
                 return false;
             }
@@ -423,8 +423,9 @@ function IsBad(x,t) {
             // 1e-10 (minimum)
             // 8388608 (maximum)
 
+            var tempFloat;
             if (x) {
-                var tempFloat = x % 1;
+                tempFloat = x % 1;
                 if (tempFloat) {
                     // Float Test...
                     if (tempFloat != 0) {
@@ -473,7 +474,7 @@ function IsBad(x,t) {
             (Number && (x instanceof Number || (Object.prototype.toString.call(x) === '[object Number]') || (x).constructor === Number))) {
 
             // First check if the new Number Object has any assigned properties. If so, its a valid value and should not be flagged as bad.
-            for (const property1 in x) {
+            for (const prop in x) {
                 IsBadMessage = 'IsBad() : result=false : type=Number (with properties) : ' + x.valueOf();
                 return false;
             }
@@ -520,7 +521,7 @@ function IsBad(x,t) {
             // 8388608 (maximum)
 
             if (xCastToNumber) {
-                var tempFloat = xCastToNumber % 1;
+                tempFloat = xCastToNumber % 1;
                 if (tempFloat) {
                     // Float Test...
                     if (tempFloat != 0) {
@@ -575,9 +576,7 @@ function IsBad(x,t) {
         // BigInt Primitive Check
         // Note that BigInt has no object constructor nor can be a decimal. So we use the primitive check only. ES2020 introduced BigInt so not widely supported yet. Number Primitive and Number Object Constructor Check. Note: Any use of "BigInt()" conversion without checking if value is within +-Number.MAX_VALUE will blow up and say failed due to number be Infinity and not an integer! So ALWAYS use "IsBad()" to make sure number is in range before doing "BigInt(x)".
 
-        // UPDATE: Added "Number" type for catching BigInt as scientific notation (1.79e+308) comes in as a "Number" type before its coerced as BigInt(x) below. Note that BigInt does not accept decimal values, like -5E-324. However, when JavaScript reaches its memory limit (-5E-325) its converted to 0. That occurs when the number exceeds double precison floating value ranges (too tiny a number for memory). So, that will pass as a BigInt.
-
-        if ((type === 0 || type === 2) && (typeof x === 'bigint' || (BigInt && (x).constructor === BigInt) || (typeof x === 'number' && x.toString().toLowerCase().indexOf("e-") === -1))) {
+        if ((type === 0 || type === 2) && (typeof x === 'bigint' || (BigInt && (x).constructor === BigInt))) {
 
             // BIGINT WILL NEVER RETURN "NaN"
             // AVOID NaN checkes with BigInt, as BigInt is NOT a Number type!
@@ -598,7 +597,7 @@ function IsBad(x,t) {
 
 
         // RegExp Primitive and RegExp Object Constructor Check
-        if ((type === 0 || type === 7) && (typeof x === 'regexp')) {
+        if ((type === 0 || type === 7) && (x instanceof RegExp)) {
 
             // If a bad or missing value comes in for a RegExp primitive, whether explicit or coerced, we flag the value as bad. Note: Empty "RegExp()" functions default to "/(?:)/" so valid like empty Number and Booleans. "(?:)" means non-capture group or do not capture anything, so safe. Note: We ONLY reject RegEx at this time if it returns a truly empty regex as "/(?:)/". Only empty RegEx or with undefined return the emopty regex query, which is bad.
             if (x.toString() === '/(?:)/') {
@@ -612,7 +611,7 @@ function IsBad(x,t) {
         } else if ((type === 0 || type === 7) &&
             (RegExp && (x instanceof RegExp || (Object.prototype.toString.call(x) === '[object RegExp]') || (x).constructor === RegExp))) {
             // If a new RegExp() object is created with any properties assigned, do not flag it as "bad" or check for values below.
-            for (const property1 in x) {
+            for (const prop in x) {
                 IsBadMessage = 'IsBad() : result=false : type=RegExp (with properties) : ' + x;
                 return false;
             }
@@ -631,9 +630,8 @@ function IsBad(x,t) {
         // WARNING: The Date checker below will generally accept most values if the object coming in is a treu Date Object using "new Date(x)". This means it will allow bad values for "x" to create unpredictable dates. So it would fail to generate the expected date for say "new Date(1/1/2000)", which defaults to Midnight on Dec 31, 1969. Also, when a non-date object is submitted, like without "new" as "Date(x)", almost all those would be rejected as that function defaults almost all dates to the current date-time, which is wrong.
         // So use the date checked carefully and plan to always use "new Date(x)" and a standard date-friendly value for "x" as a number, or "2000,2,1" etc which readily convert to accurate historical dates.
         if (type === 0 || type === 5) {
-            if (((typeof x === 'date')// check true date objects first
+            if (((x instanceof Date)
                 || (x.getMonth && (typeof x.getMonth === 'function') && x.getMonth >= 0)
-                || (x instanceof Date)
                 || (Date && (x instanceof Date || (Object.prototype.toString.call(x) === '[object Date]') || (x).constructor === Date)))) {
 
                 if (x.toString() === 'Invalid Date'
@@ -752,7 +750,7 @@ function IsBad(x,t) {
         // GENERIC OBJECTS WITH ANY PROPERTIES FILTER: Objects with one or more properties are caught here and flagged as NOT empty. This logic checks prototype as well as object properties, so could give false positives. This logic below only catches Non-Objects assigned primitive values, true Objects with one or more valid properties, and non-empty strings. Flags them as NOT empty early before object tests below.
         // WARNING: Empty new Objects ("{}" or "new Object()"), or wrapped-boxed objects around primitive using "new" for Numbers, Dates, Booleans, and Symbols are skipped over by this logic below so not caught as being NOT empty! Logic below REMOVES any object that has has one or more properties (object or prototype).
         if (type === 0) {
-            for (const property1 in x) {
+            for (const prop in x) {
                 IsBadMessage = 'IsBad() : result=false : type=Unknown (with properties) : ' + x;
                 return false;
             }
@@ -797,7 +795,7 @@ var IsBadTester = {
         'use strict';
         // Print result in Developer Tools (F12) console section in the web browser.
         console.log('IsBadTester() : Start');
-        var a = this.Test(this.testdata);
+        this.Test(this.testdata);
         return null;
     },
     Test: function (data) {
@@ -821,7 +819,7 @@ var IsBadTester = {
                 }
 
             }
-        };
+        }
         return null;
     },
     // TEST VALUES
@@ -846,7 +844,7 @@ var IsBadTester = {
         {test: -0, type: "number",name: "-0" },
         {test: 32, type: "number",name: "32" },
         {test: '040', type: "number",name: "'040'" },
-        {test: 0144, type: "number",name: "0144" },// octal
+        {test: 0144, type: "number",name: "0144" },// ESLint says avoid octals in this format
         {test: 0o0144, type: "number",name: "0o0144" },// octal
         {test: '0xFF', type: "number",name: "'0xFF'" },
         {test: '-0x42', type: "number",name: "'-0x42'" },
@@ -1342,7 +1340,7 @@ var IsNumTester={
         'use strict';
         // Print result in Developer Tools (F12) console section in the web browser.
         console.log('IsNumTester() : Start');
-        var a=this.Test(this.testdata);
+        this.Test(this.testdata);
         return null;
     },
     Test: function(data)
@@ -1372,7 +1370,7 @@ var IsNumTester={
                 }
 
             }
-        };
+        }
         return null;
     },
     // TEST VALUES
