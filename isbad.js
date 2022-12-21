@@ -76,7 +76,7 @@ function IsBad(x,t) {
 
         // Check "type" if caller has entered a type argument.
         let type = 0;
-        let types = ["none","number", "bigint", "string", "boolean", "date", "array", "regex", "function", "symbol", "object"];
+        let types = ["none", "number", "bigint", "string", "boolean", "date", "array", "regex", "function", "symbol", "object"];
         if (t) {
             type = types.indexOf(t.toString().toLowerCase());
         }
@@ -208,7 +208,7 @@ function IsBad(x,t) {
 
         // Array and Array Constructor Check : Since all array are objects, we check array before object test below. Arrays, unlike Number, String, etc. does NOT have a Array "typeof" primitive type, as it is an object.
 
-        if ((type === 0 || type === 6) && 
+        if ((type === 0 || type === 6) &&
             Array &&
             (x instanceof Array
                 || (Object.prototype.toString.call(x) === '[object Array]')
@@ -233,9 +233,9 @@ function IsBad(x,t) {
 
 
         // String Primitive and String Object Constructor Check
-        if ((type === 0 || type === 3) && 
+        if ((type === 0 || type === 3) &&
             ((typeof x === 'string')
-            || (String && (x instanceof String || (Object.prototype.toString.call(x) === '[object String]') ||  (x).constructor === String)))) {
+                || (String && (x instanceof String || (Object.prototype.toString.call(x) === '[object String]') || (x).constructor === String)))) {
             // Note: "new String()" creates an empty string "" so is a bad value in this function, unlike new Number and new Boolean values.
 
             // We can convert both string primitive and string objects to a string to test if empty.
@@ -332,29 +332,43 @@ function IsBad(x,t) {
         // ISNAN() FUNCTIONS (how used below)
         // isNaN('hello world');// true - CONVERTS VALUE TO NUMBER AND IF "NaN" IS RETURNED
         // Number.isNaN('hello world');// false - CHECKS ONLY FOR "NaN" VALUE NOT IF VALUE IS NUMERIC!
-
+        // let x = + 'hello' does a Number() implict conversion, returns number of NaN
 
 
 
 
         // This logic below checks for the raw "window.NaN" explicit value assigned to the variable without number coercion!
         // Note: We avoid using "isNaN" vs "Number.IsNaN" as the former would coerce all values to Number types and valid values like strings or objects would fail conversion. The check below ONLY looks for the value of NaN (window.NaN) explicitly set to the variable!
+
         if ((type === 0 || type === 1) && ((x !== x) || (Number.isNaN(x)))) {
             IsBadMessage = 'IsBad() : result=true : type=Number.NaN : NaN';
             return true;
         }
 
         // Infinity Check : Force empty response.
-        if ((type === 0 || type === 1) && 
+        if ((type === 0 || type === 1) &&
             (x === Infinity
-            || x === +Infinity
-            || x === -Infinity
-            || (Number.POSITIVE_INFINITY && x === Number.POSITIVE_INFINITY)
-            || (Number.NEGATIVE_INFINITY && x === Number.NEGATIVE_INFINITY))) {
+                || x === +Infinity
+                || x === -Infinity
+                || (Number.POSITIVE_INFINITY && x === Number.POSITIVE_INFINITY)
+                || (Number.NEGATIVE_INFINITY && x === Number.NEGATIVE_INFINITY))) {
             IsBadMessage = 'IsBad() : result=true : type=Number.Infinity : ' + x;
             return true;
         }
 
+        // STRING CONVERSION TO NUMBER?
+        // This Number checker below does NOT convert strings or other values to numbers. They are always flagged as bad. Why? There are too many crazy scenarios where numbers as strings still fail. However in the future if you want string conversion to number checking you could change the logic to include this below. Note: The "+" unary check below tries quick implicit Number() conversion to a number or NaN by returning one of the two. This would also catch all new Number Object logic, so only do this change below if you want IsBad() to ignore number - friendly convertable string or other values:
+
+        // This says, if you expect only a number, but the value can be converted into a non-NaN numerical value, then proceed. A value that would pass would be: "56", null, "", 0/Infinity, etc. BUT NOT "5  5", 0/0, undefined, etc. This is why doing this is not recommended. Better to tell user all values are bad here and avoid problems.
+
+        //if ((type === 1) && (!Number.isNaN(+ x))) {
+        //    // ....do some logic on string
+        //}
+
+
+
+
+        // This only checks number primitives. "new Number()" using typeof is an 'object' when checked below, so that is checked later.
         if ((type === 0 || type === 1) && (typeof x === 'number')) {
 
             // NaN MATH CALCULATION TEST : Will this number value generate a NaN or error when doing basic math? If so, that could be a clue that this is NOT a safe number to use! Number Found but test a few scenarios to make sure it generates no errors.
@@ -364,9 +378,9 @@ function IsBad(x,t) {
 
             // ALERT: Do NOT do an equality test below (x !== x) for comparing equality of any floating point values with decimals that are coereced or calculated as they are notoriously inaccurate and would likely fail this equality check. If NaN is checked here, test below here would always fail for them!
 
-            // Logic below should RARELY catch anything since typeof 'number' here would stop ann primitive literals other than numbers. That is different for its use below for new Number() object constructor values.
+            // Logic below should RARELY catch anything since typeof 'number' here would stop all primitive literals other than numbers. That is different for its use below for new Number() object constructor values.
             if (Number.isNaN(x * 1) || isNaN(x)) {
-                IsBadMessage = 'IsBad() : result=true : type=Number.NaN (x * 1 check) : ' + x.valueOf();
+                IsBadMessage = 'IsBad() : result=true : type=Number.NaN (conversion check) : ' + x.valueOf();
                 return true;
             }
 
@@ -1228,15 +1242,14 @@ function IsStrictNum(n)
         if (typeof n==='symbol')
         {
             return false;
-        } else if (typeof n==='bigint')
-        {
+        } else if (typeof n==='bigint') {
             return false;
-        } else if ((n===n)
-            &&!Number.isNaN(n)
-            &&!isNaN(parseFloat(n))
-            &&isFinite(n)
-            &&n>=Number.MIN_SAFE_INTEGER
-            &&n<=Number.MAX_SAFE_INTEGER)
+        } else if ((n === n)// catches NaN early
+            && typeof n === 'number'// no "new Number()" objects or other types allowed
+            && !isNaN(parseFloat(n))
+            && isFinite(n)
+            && n>=Number.MIN_SAFE_INTEGER
+            && n<=Number.MAX_SAFE_INTEGER)
         {
             return true;
         } else
@@ -1303,28 +1316,35 @@ function IsNum(n)
             {
                 return false;
             }
-        } else if ((n===n)
-            &&!Number.isNaN(n)
-            &&!isNaN(parseFloat(n))
-            &&isFinite(n)
-            &&n>=Number.MIN_SAFE_INTEGER
-            &&n<=Number.MAX_SAFE_INTEGER)
-        {
+
+        // IS VALUE DIRECTLY CONVERTIBLE TO A NUMBER?
+        // The code below allows some strings or other values to pass through as numbers, assuming the end user
+        // wants to convert those numbers in their code later. But you may not want this feature.
+        // This is done using "Number.isNaN(+ n)", which tries to convert valid strings or values
+        // to either a number or NaN.
+        // This means "56" for example would pass, as would other strings or values that reduce to a number or 0.
+        // "isNaN(parseFloat(n))" does a similar check but filters out more. Remove these and add strict type
+        // checking if you want to avoid allowing string or other weird values into the function.
+        // Example: A value that would pass would be: "56", null, "", 0/Infinity, etc. as convertable to integers.
+        // Values that would NOT pass woruld be: "5  5", 0/0, undefined, etc. This is why its better to tell users all values are bad here and avoid problems. IsStrictNum() handles that.
+
+        } else if ((n === n)// catches NaN early
+            && !Number.isNaN(+ n)// filters out any string or value convertible to a NaN value
+            && !isNaN(parseFloat(n))
+            && isFinite(Number(n))
+            && Number(n)>=Number.MIN_SAFE_INTEGER
+            && Number(n)<=Number.MAX_SAFE_INTEGER){
             return true;
-        } else
-        {
+        } else {
             return false;
         }
     } catch (e)
     {
-        if (typeof console!=='undefined'&&console.error)
-        {
+        if (typeof console!=='undefined'&&console.error){
             console.error('ERROR : Function IsNumTester() : '+e);
-        } else if (typeof console!=='undefined'&&console.warn)
-        {
+        } else if (typeof console!=='undefined'&&console.warn){
             console.warn('WARNING : Function IsNumTester() : '+e);
-        } else if (typeof console!=='undefined'&&console.log)
-        {
+        } else if (typeof console!=='undefined'&&console.log){
             console.log('ERROR : Function IsNumTester() : '+e);
         }
         return false;
