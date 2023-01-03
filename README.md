@@ -66,7 +66,7 @@ IfBad(x,"string","hello") would return "hello" if your value for "x" was a non-s
 
 Even better, I have added a full suite of excellent function for true "null" and a fast IsNum() numerical values checker and a IsStrictNum() true integer checker. Included is an error-checking JavaScript function deal with holes and bugs in the new null coalesce, truthy, falsy, or conditional ternary operators in ECMAScript (that have failed or confused programmers in many scenarios). These new functions allow you to purely check for edge-case values that might blow up your JS applications, or which combine the checks of multiple other operators into one. The IsBad() mother function included most of these features alread. But these functions allow you a narrower target for detecting smaller bug-checking scenarios in your data. And like IfBad(), all have built in default value return parameters so you can easily call these inside expressions and keep your code logic moving forward. They include the following new functions in JavaScript:
 
-- IsNull()/IfNull()
+- IsEmpty()/IfEmpty()
 - IsNum()/IfNum()
 - IsStrictNum/IfStrictNum()
 

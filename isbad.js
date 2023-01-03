@@ -107,7 +107,7 @@ function IsBad(x,t) {
         // 'NaN' is a member of the 'Number' type but is not a legal number. Bad calculations or conversions return NaN. Beware that Numbers can also be assigned or return null, return undefined as a property like when a variable doesnt exist, or be assigned directly the undefined primitive. Examples are 0/0 returns NaN, but 1/0 returns Infinity, -1/0 -Infinity.
         //  ALWAYS CHECK FOR NaN! Why? (see below)
         // In most programs, NaN either cannot be translated correctly from javaScript into many types, is read as an error, or creates a new error in 3rd party applications when read! It also is created when math functions fail like 0/0.
-        // Do NOT use legacy "isNaN" as in (isNaN && isNaN(x)), use Number.IsNull(x) instead, as "isNaN" tries to convert/coerce the value and some values would fail or have surprising behavior! Using Number.isNaN() allows a check of the actual value without conversion.
+        // Do NOT use legacy "isNaN" as in (isNaN && isNaN(x)), use Number.IsEmpty(x) instead, as "isNaN" tries to convert/coerce the value and some values would fail or have surprising behavior! Using Number.isNaN() allows a check of the actual value without conversion.
         // Writing NaN to a database or in an HTTP request usually ends up either causing an error or ending up as a null value. So better to CONVERT NaN or use a default replacement than count on NaN values.
         // NaN is not representable in JSON, and gets converted to 'null'. So good to avoid with this check here and force the developer to explicitly assign "null", 0, "", or some value instead of an unexpecxted NaN turned to null.
         // "x !== x" is a good NaN check for older/newer browser script engines, as only true for NaN since it can never equal itself. This check in a conditional will always flag a NaN value.
@@ -1126,12 +1126,12 @@ var IsBadTester = {
 // ------------------------------------------------------------
 
 
-// "IfNull()" is an overload for "IsNull()" and returns either the original "x" parameter entered, or a default "d" value of the developers choice if a bad or empty value is detected. This powerful version allows you to embed this function into expressions in JavaScript and keep processing values rather than stop and do conditional checks!
+// "IfEmpty()" is an overload for "IsEmpty()" and returns either the original "x" parameter entered, or a default "d" value of the developers choice if a bad or empty value is detected. This powerful version allows you to embed this function into expressions in JavaScript and keep processing values rather than stop and do conditional checks!
 
-function IfNull(x,d)
+function IfEmpty(x,d)
 {
     'use strict';
-    if (IsNull(x))
+    if (IsEmpty(x))
     {
         return d;// return a default value if bad
     } else {
@@ -1140,9 +1140,9 @@ function IfNull(x,d)
 }
 
 
-// IsNull() : Improved Null Checker
+// IsEmpty() : Improved Null Checker
 
-// JavaScripts new "null coalescing" logic has holes and is broken. It misses a number of values and types, is vulnerable to a ReferenceError, and confuses developers with ternary truthy checks and the object property unary "?" operator which does detect undeclared object properties correctly. This new function "IsNull()" clarifies and fixes those bugs!
+// JavaScripts new "null coalescing" logic has holes and is broken. It misses a number of values and types, is vulnerable to a ReferenceError, and confuses developers with ternary truthy checks and the object property unary "?" operator which does detect undeclared object properties correctly. This new function "IsEmpty()" clarifies and fixes those bugs!
 
 
 // TWO MAJOR FLAWS exist in current JavaScript error checking in all versions:
@@ -1174,18 +1174,20 @@ function IfNull(x,d)
 //alert(person?.employer?.toLowerCase()??"No employer defined 3");
 
 
-// * The method below returns JUST those values below that would blow up any operation, calculation, coercion, or other exptression in JavaScript. The logic below also avoids the inconsistent nature of "if/then" truthy statements, or using the ternary operator "truthy ? true : false". And it also avoids null coalescence which is missing NaN and undeclared variables. It combines the two but throws out the inconsistent expectations of various bad data scenarios. IsNull() simply checks for null or empty values, which includes NaN, null, undefined, and missing variable references, but ignores the rest (false, 0, "0", "", float collapse to 0, etc.) which have no impact on most data.
+// * The method below returns JUST those values below that would blow up any operation, calculation, coercion, or other exptression in JavaScript. The logic below also avoids the inconsistent nature of "if/then" truthy statements, or using the ternary operator "truthy ? true : false". And it also avoids null coalescence which is missing NaN and undeclared variables. It combines the two but throws out the inconsistent expectations of various bad data scenarios. IsEmpty() simply checks for null or empty values, which includes NaN, null, undefined, and missing variable references, but ignores the rest (false, 0, "0", "", float collapse to 0, etc.) which have no impact on most data.
 
-// * My improved IsNull() function allows you to AVOID the four bad null type of values that cause errors or issues. It checks for the following:
+// * My improved IsEmpty() function allows you to AVOID the four bad null type of values that cause errors or issues. It checks for the following:
 
 // - undefined types - undeclared/missing variables
 // - undefined primitives - declared but not initialized values, missing object properties, explicit or assigned undefined primitive values.
 // - NaN
 // - null
+// - '' empty strings plus spaces, tabs, etc
+// - 0 or "0", which can affect booleans, nulls translated to 0, small floats as 0, etc.
 
 
 // Improved null check
-function IsNull(x)
+function IsEmpty(x)
 {
     'user strict';
     try
@@ -1193,7 +1195,11 @@ function IsNull(x)
         if (typeof x==='undefined'
             ||x===undefined
             ||x===null
-            ||x!==x)
+            ||x!==x
+            || ((typeof x === 'string') && (x.replace(/^\s+|\s+$/gm, '').replace(/[\t\n\r]/gm, '') === ''))
+            || ((typeof x === 'number') && Number(x) === 0)
+            || (Number(x) === 0)
+        )
         {
             return true;
         } else {
@@ -1203,13 +1209,13 @@ function IsNull(x)
     {
         if (typeof console!=='undefined'&&console.error)
         {
-            console.error('ERROR : Function IsNull() : '+e);
+            console.error('ERROR : Function IsEmpty() : '+e);
         } else if (typeof console!=='undefined'&&console.warn)
         {
-            console.warn('WARNING : Function IsNull() : '+e);
+            console.warn('WARNING : Function IsEmpty() : '+e);
         } else if (typeof console!=='undefined'&&console.log)
         {
-            console.log('ERROR : Function IsNull() : '+e);
+            console.log('ERROR : Function IsEmpty() : '+e);
         }
         return true;
     }
