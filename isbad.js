@@ -379,10 +379,17 @@ function IsBad(x,t) {
             // ALERT: Do NOT do an equality test below (x !== x) for comparing equality of any floating point values with decimals that are coereced or calculated as they are notoriously inaccurate and would likely fail this equality check. If NaN is checked here, test below here would always fail for them!
 
             // Logic below should RARELY catch anything since typeof 'number' here would stop all primitive literals other than numbers. That is different for its use below for new Number() object constructor values.
-            if (Number.isNaN(x * 1) || isNaN(x)) {
+            if (Number.isNaN(x * 1) || isNaN(+ x) || isNaN(x)) {
                 IsBadMessage = 'IsBad() : result=true : type=Number.NaN (conversion check) : ' + x.valueOf();
                 return true;
             }
+
+
+            if (!isFinite(x)) {
+                IsBadMessage = 'IsBad() : result=true : type=Number.Infinite (finite check) : ' + x.valueOf();
+                return true;
+            }
+
 
             // ISNUMERIC type Checker
             // Use this to filter out any last minute non-numeric values, which should be rare based on the "typeof" Number check above!
@@ -500,6 +507,11 @@ function IsBad(x,t) {
 
             if (Number.isNaN(Number(x) * 1) || isNaN(Number(x))) {
                 IsBadMessage = 'IsBad() : result=true : type=Number.NaN (Number(x) * 1 check) : ' + x.valueOf();
+                return true;
+            }
+
+            if (!isFinite(Number(x))) {
+                IsBadMessage = 'IsBad() : result=true : type=Number.Infinite (finite check) : ' + x.valueOf();
                 return true;
             }
 
@@ -1240,26 +1252,60 @@ function IfStrictNum(n,d)
 
 // Returns false for BigInt values, only Number types pass
 // Note: Needs a float in-range check
+// Note: Number Ranges below for IsStrictNum() are limited to safe precise ranges only!
+
+// SPECIAL: Because decimals lose precision early, below are the hard-coded smaller decimal limits used for IsStrictNum(). Modify these below as needed. Precision of decimal floats decreases as the value increases, so you might need to change MIN-VALUE and MAX_VALUE ranges to much smaller values using the chart below if you want guaranteed precision. As you can see, if you want to support up to 9-decimal place accuracy in floats, you will need to limit MAX_VALUE to these values:
+
+//| Precision | First Unsafe 
+//| 1         | 5,629,499,534,21,312
+//| 2         | 703,687,441,770,664
+//| 3         | 87,960,930,220,208
+//| 4         | 5,497,558,130,888
+//| 5         | 68,719,476,736
+//| 6         | 8,589,934,592
+//| 7         | 536,870,912
+//| 8         | 67,108,864
+//| 9         | 8,388,608
+
+// FOR MAXIMUM FLOAT RANGES use max and min values below. But precision drops.
+// MAX_VALUE = 1.7976931348623157e+308 or max value JavaScript can hold. Way past the max safe integer value and precision goes down after this.
+// MIN_VALUE = 5e-324 or min decimal value approaching 0 JavaScript can hold. Past this it defaults to 0. Precision in decimals however is not guaranteed much earlier so I recommend the values from the list above.
+
+// FOR MAXIMUM PRECISION to 9 decimal places in your floats, use the following range:
+// 1e-10 (minimum)
+// 8388608 (maximum)
+
 function IsStrictNum(n)
 {
     'use strict';
     try
     {
-        if (typeof n==='symbol')
-        {
+        if (typeof n === 'symbol') {
             return false;
-        } else if (typeof n==='bigint') {
+        } else if (typeof n === 'bigint') {
             return false;
         } else if ((n === n)// catches NaN early
             && typeof n === 'number'// no "new Number()" objects or other types allowed
+            && !Number.isNaN(+ n)// filters out any value convertible to a NaN value
             && !isNaN(parseFloat(n))
-            && isFinite(n)
-            && n>=Number.MIN_SAFE_INTEGER
-            && n<=Number.MAX_SAFE_INTEGER)
-        {
-            return true;
-        } else
-        {
+            && isFinite(n)) {
+
+            // To Strictly limit Decimal Numbers to 10 decimal places if has a decimal component...
+            if ((n % 1) != 0) {
+               if ((n >= 1e-10 && n <= 8388608) || (n <= -(1e-10) && n >= -(8388608)) || Number(n) === 0) {
+                    return true;
+               } else {
+                    return false;
+               }
+            } else {
+               if (Number(n) >= Number.MIN_SAFE_INTEGER && Number(n) <= Number.MAX_SAFE_INTEGER) {
+                    return true;
+               } else {
+                    return false;
+               }
+            }
+
+        } else {
             return false;
         }
     } catch (e)
@@ -1314,8 +1360,8 @@ function IsNum(n)
         } else if (typeof n==='bigint')
         {
             if ((n===n)
-                &&BigInt(n)>=BigInt(-(Number.MAX_VALUE))
-                &&BigInt(n)<=BigInt(Number.MAX_VALUE))
+                && BigInt(n) >= BigInt(-(Number.MAX_VALUE))
+                && BigInt(n) <= BigInt(Number.MAX_VALUE))
             {
                 return true;
             } else
@@ -1334,12 +1380,32 @@ function IsNum(n)
         // Example: A value that would pass would be: "56", null, "", 0/Infinity, etc. as convertable to integers.
         // Values that would NOT pass woruld be: "5  5", 0/0, undefined, etc. This is why its better to tell users all values are bad here and avoid problems. IsStrictNum() handles that.
 
+        // Number Ranges below for IsNum(), unlike IsStrictNum(), support full unprecise ranges including BigInt ranges, up to -+Infinity and -+0.
+
+        // Note that this "IsNum()" checker has wider support for the full number ranges than IsBad() or "IsStrictNum()", supporting the values below that include the SAFE ranges but go beyond. This allows this function to support both BigInt and Numeric Types.
+
+        // -------------------------------------------------
+
+        // IsNum() Supports these numeric ranges:
+
+        // MAXIMUM TO MINIMUM POSITIVE VALUE RANGE
+        // 1.79E308 to 4.94E-324 (+Infinity is out of range, but E-324 collapses to 0 in JavaScript so supported)
+
+        // MAXIMUM TO MINIMUM NEGATIVE VALUE RANGE
+        // -4.94E-324 to -1.79E308 (-Infinity is out of range, )
+
+        // -------------------------------------------------
+
+
         } else if ((n === n)// catches NaN early
             && !Number.isNaN(+ n)// filters out any string or value convertible to a NaN value
             && !isNaN(parseFloat(n))
             && isFinite(Number(n))
-            && Number(n)>=Number.MIN_SAFE_INTEGER
-            && Number(n)<=Number.MAX_SAFE_INTEGER){
+            &&
+            ((Number(n) >= Number.MIN_VALUE && Number(n) <= Number.MAX_VALUE)
+            || (Number(n) <= -(Number.MIN_VALUE) && Number(n) >= -(Number.MAX_VALUE)) || Number(n) === 0)
+        )
+        {
             return true;
         } else {
             return false;
